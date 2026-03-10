@@ -179,21 +179,21 @@ private:
 	void reset();
 	void reset_timer_value(Ipponboard::ETimer timer);
 
-	inline Ipponboard::Fight& current_fight()
+	inline Ipponboard::Fight& current_fight() // TODO TOP, aktueller Kampf rauskriegen
 	{
 		return m_Tournament.at(m_currentRound)->at(m_currentFight);
 	}
 
-	inline Ipponboard::Fight const& current_fight() const
+	inline Ipponboard::Fight const& current_fight() const // TODO TOP, aktueller Kampf rauskriegen
 	{
 		return m_Tournament.at(m_currentRound)->at(m_currentFight);
 	}
 
 	Ipponboard::TournamentMode m_mode;
-	Ipponboard::Tournament m_Tournament;
+	Ipponboard::Tournament m_Tournament; // TODO TOP , enthält alle Kämpfe und Runden -> aktuelle Kämpfer rauskriegen
 	std::vector<std::shared_ptr<TournamentModel> > m_TournamentModels;
-	int m_currentRound;
-	int m_currentFight;
+	int m_currentRound; // TODO TOP - aktuelle Runde
+	int m_currentFight; // TODO TOP - aktueller Fight
 
     std::unique_ptr<Ipponboard::IpponboardSM> m_pSM;
 	Ipponboard::EState m_State;

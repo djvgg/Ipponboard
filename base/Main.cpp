@@ -22,6 +22,7 @@
 #include <QCommandLineParser>
 #include <QDebug>
 #include <QTextStream>
+#include <iostream> // TODO TOP
 
 #ifndef _WIN32
 #ifndef NO_ERROR
@@ -146,7 +147,7 @@ void CustomMessageHandler(QtMsgType type, const QMessageLogContext& context, con
 int main(int argc, char* argv[])
 {
 	QApplication a(argc, argv);
-
+	std::cout << "Startpunkt des Programms in Base" << std::endl; // TODO TOP
     // Open the log file and truncate existing content
     QFile logFile(QCoreApplication::applicationName() + ".log");
     if (logFile.open(QIODevice::WriteOnly | QIODevice::Truncate))
@@ -255,6 +256,7 @@ int main(int argc, char* argv[])
 	}
 	else
 	{
+		std::cout << "Einzelmodus gestartet" << std::endl;
 		pMainWnd = std::make_unique<MainWindow>();
 	}
 

@@ -1,8 +1,9 @@
-﻿// Copyright 2018 Florian Muecke. All rights reserved.
+// Copyright 2018 Florian Muecke. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.txt file.
 
 #include "Fight.h"
+#include <iostream> // TODO TOP
 
 using namespace Ipponboard;
 
@@ -115,21 +116,22 @@ QString Fight::GetTimeRemainingString() const
 			   QString::number(seconds));
 }
 
-bool Fight::HasWon(FighterEnum who) const
+bool Fight::HasWon(FighterEnum who) const // TODO TOP, wer hat gewonnen?
 {
 	//unused: const FighterEnum other = GetUkeFromTori(who);
 
 	auto result = rules->CompareScore(*this);
-
+	std::cout << "CompareScore result: " << result << std::endl;
 	if (who == FighterEnum::First && result < 0 || who == FighterEnum::Second && result > 0)
 	{
+		std::cout << "Winner: " << fighters[static_cast<int>(who)].name.toStdString() << std::endl;
 		return true;
 	}
 
 	return false;
 }
 
-int Fight::GetScorePoints(FighterEnum who) const
+int Fight::GetScorePoints(FighterEnum who) const //TODO TOP - Winner schnappen nach Win (Ippon, Wazarri, nach Punkten ?)
 {
 	const FighterEnum other = GetUkeFromTori(who);
 

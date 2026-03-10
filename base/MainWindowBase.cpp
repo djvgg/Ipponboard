@@ -1,4 +1,4 @@
-﻿// Copyright 2018 Florian Muecke. All rights reserved.
+// Copyright 2018 Florian Muecke. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.txt file.
 
@@ -15,6 +15,8 @@
 #endif
 #include "../core/Rules.h"
 #include "../util/path_helpers.h"
+#include "../api/ApiServer.h"
+#include <iostream> // TODO TOP
 
 #include <QApplication>
 #include <QDesktopWidget>
@@ -100,6 +102,18 @@ void MainWindowBase::Init()
 	m_pController->RegisterView(m_pSecondaryView.get());
 	m_pController->RegisterView(static_cast<IView*>(this));
 	m_pController->RegisterView(static_cast<IGoldenScoreView*>(this));
+
+	// Start API server
+	m_pApiServer.reset(new Ipponboard::ApiServer(m_pController.get(), this));
+	if (m_pApiServer->StartListening(PORT))
+	{
+		qInfo() << "API Server started on port" << PORT;
+		std::cout << "API Server started" << std::endl;
+	}
+	else
+	{
+		qCritical() << "Failed to start API Server on port" << PORT;
+	}
 }
 
 QString MainWindowBase::GetConfigFileName() const

@@ -41,12 +41,12 @@ public:
 	bool ImportFighters(QString const& fileName, QString const& formatStr, QString& errorMsg);
 	bool ExportFighters(QString const& fileName, QString const& formatStr, QString& errorMsg);
 
-	bool AddFighter(Ipponboard::Fighter f);
-	bool RemoveFighter(Ipponboard::Fighter f);
+	bool AddFighter(Ipponboard::Fighter f); // TODO TOP - Fighter hinzufügen
+	bool RemoveFighter(Ipponboard::Fighter f); // TODO TOP - Fighter entfernen
 	QStringList GetClubFighterNames(QString const& filter) const;
 
 //private:
-	std::set<Ipponboard::Fighter> m_fighters; //TODO: encapsulate
+	std::set<Ipponboard::Fighter> m_fighters; //TODO: encapsulate // TODO Liste alle Fighter auf - Frage wirklich alle oder nur in der jeweiligen Gewichtsklasse/Alterklasse
 private:
 
 };

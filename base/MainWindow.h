@@ -72,8 +72,8 @@ private slots:
 private:
 	/* member */
 	std::unique_ptr<Ui::MainWindow> m_pUi;
-	std::shared_ptr<Ipponboard::FightCategoryMgr> m_pCategoryManager;
-	QStringList m_CurrentFighterNames;
+	std::shared_ptr<Ipponboard::FightCategoryMgr> m_pCategoryManager; // TODO TOP - Kategorien
+	QStringList m_CurrentFighterNames; // TODO TOP - Fighter in der Liste
 };
 
 #endif  // BASIC_EDITION_MAINWINDOW_H_

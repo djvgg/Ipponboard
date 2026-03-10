@@ -30,6 +30,7 @@ class Controller;
 class ClubManager;
 class FightCategoryMgr;
 class ScoreScreen;
+class ApiServer;
 }
 class QSettings;
 
@@ -44,8 +45,8 @@ static const char* const str_normal_round_time = "Normal";
 static const char* const str_tag_Main = "Main";
 static const char* const str_tag_size = "size";
 static const char* const str_tag_pos = "pos";
-static const char* const str_tag_SecondScreen = "SecondScreen";
-static const char* const str_tag_SecondScreenSize = "SecondScreenSize";
+static const char* const str_tag_SecondScreen = "SecondScreen"; // TODO TOP - anschauen
+static const char* const str_tag_SecondScreenSize = "SecondScreenSize"; // TODO TOP - anschauen
 static const char* const str_tag_MatLabel = "MatLabel";
 static const char* const str_tag_LabelHome = "LabelHome";
 static const char* const str_tag_LabelGuest = "LabelGuest";
@@ -180,6 +181,7 @@ protected:
 	int m_secondScreenNo;
 	QSize m_secondScreenSize;
 	Ipponboard::ControllerConfig m_controllerCfg;
+	std::unique_ptr<Ipponboard::ApiServer> m_pApiServer;
 
 private:
 #ifdef _WIN32

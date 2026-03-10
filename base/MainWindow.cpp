@@ -71,7 +71,7 @@ void MainWindow::Init()
 void MainWindow::on_actionManageCategories_triggered()
 {
 	//save categories before editing
-	m_pCategoryManager->SaveCategories();
+	m_pCategoryManager->SaveCategories(); // TODO TOP - Kategorien saven 
 
 	FightCategoryManagerDlg dlg(m_pCategoryManager, this);
 
@@ -127,17 +127,17 @@ void MainWindow::on_comboBox_weight_currentIndexChanged(const QString& s)
 	m_pSecondaryView->UpdateView();
 }
 
-void MainWindow::on_comboBox_name_first_currentIndexChanged(const QString& s)
+void MainWindow::on_comboBox_name_first_currentIndexChanged(const QString& s) // TODO TOP - First Fighter
 {
 	update_fighters(s);
-
+	std::cout << "First Fighter Name: " << s.toStdString() << std::endl; // TODO TOP
 	m_pController->SetFighterName(FighterEnum::First, s);
 }
 
-void MainWindow::on_comboBox_name_second_currentIndexChanged(const QString& s)
+void MainWindow::on_comboBox_name_second_currentIndexChanged(const QString& s) // TODO TOP - Second Fighter
 {
 	update_fighters(s);
-
+	std::cout << "Second Fighter Name: " << s.toStdString() << std::endl; // TODO TOP
 	m_pController->SetFighterName(FighterEnum::Second, s);
 }
 
@@ -205,7 +205,13 @@ void MainWindow::update_fighter_name_completer(const QString& weight)
 		}
 	}
 
-	m_CurrentFighterNames.sort();
+	m_CurrentFighterNames.sort(); // TODO TOP - Fighter Sortieren
+
+	for (const QString& name : m_CurrentFighterNames) // TODO TOP - löschen
+    {
+       std::cout << "Liste der Fighter: " << name.toStdString() << std::endl; // TODO TOP - löschen
+    }
+
 
 	m_pUi->comboBox_name_first->clear();
 	m_pUi->comboBox_name_first->addItems(m_CurrentFighterNames);
@@ -213,7 +219,7 @@ void MainWindow::update_fighter_name_completer(const QString& weight)
 	m_pUi->comboBox_name_second->addItems(m_CurrentFighterNames);
 }
 
-void MainWindow::update_fighters(const QString& s)
+void MainWindow::update_fighters(const QString& s) // TODO TOP, Fighter werden geupdatet
 {
 	if (s.isEmpty())
 		return;
@@ -233,7 +239,7 @@ void MainWindow::update_fighters(const QString& s)
 	const QString club; // TODO: later
 	const QString category = m_pUi->comboBox_weight_class->currentText();
 
-	Ipponboard::Fighter fNew(firstName, lastName);
+	Ipponboard::Fighter fNew(firstName, lastName); // TODO TOP, Fighter addiing
 	fNew.club = club;
 	fNew.weight = weight;
 	fNew.category = category;

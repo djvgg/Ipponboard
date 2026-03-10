@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.28)
 
 project(Ipponboard-Main VERSION 2.2.0 LANGUAGES CXX)
 
+set(CMAKE_VERBOSE_MAKEFILE ON) # TODO TOP
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0") # TODO TOP
+
 # Define variables for the required MSVC runtime libraries
 if(MSVC)
     include(InstallRequiredSystemLibraries)
