@@ -118,6 +118,10 @@ set(SOURCES
     ../core/Rules.cpp
     ../api/ApiServer.h
     ../api/ApiServer.cpp
+    ../api/HttpResponse.h
+    ../api/HttpResponse.cpp
+    ../api/ApiEndpoints.h
+    ../api/ApiEndpoints.cpp
 )
 
 set(FORMS

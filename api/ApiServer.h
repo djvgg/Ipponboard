@@ -2,10 +2,15 @@
 #define API__APISERVER_H_
 
 #include <QTcpServer>
+#include <memory>
+
+class QTcpSocket;
+class QJsonObject;
 
 namespace Ipponboard
 {
 class Controller;
+class ApiEndpoints;
 
 constexpr uint16_t PORT = 8080;
 
@@ -24,7 +29,10 @@ protected:
     void incomingConnection(qintptr socketDescriptor) override;
 
 private:
+    void handleRequest(QTcpSocket* pSocket);
+
     Controller* m_pController;
+    std::unique_ptr<ApiEndpoints> m_pEndpoints;
 };
 
 }
