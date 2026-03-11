@@ -1,22 +1,38 @@
 #ifndef API__APIENDPOINTS_H_
 #define API__APIENDPOINTS_H_
 
+
 class QTcpSocket;
 class QJsonObject;
+#include <QString>
 
 namespace Ipponboard
 {
 class Controller;
+class FighterManager;
+
+class Fighter;
+
+struct PostFightersResult {
+    bool success = false;
+    QString category;
+    QString weightClass;
+    QString fighter1Name;
+    QString fighter2Name;
+};
 
 class ApiEndpoints
 {
 public:
-    explicit ApiEndpoints(Controller* pController);
+    explicit ApiEndpoints(Controller* pController, FighterManager* pFighterManager);
 
-    void HandlePostFighter(QTcpSocket* pSocket, const QJsonObject& json);
+    PostFightersResult HandlePostFighters(QTcpSocket* pSocket, const QJsonObject& json);
 
 private:
+    Fighter ParseFighterFromJson(const QJsonObject& fighterJson);
+
     Controller* m_pController;
+    FighterManager* m_pFighterManager;
 };
 
 }

@@ -104,7 +104,7 @@ void MainWindowBase::Init()
 	m_pController->RegisterView(static_cast<IGoldenScoreView*>(this));
 
 	// Start API server
-	m_pApiServer.reset(new Ipponboard::ApiServer(m_pController.get(), this));
+	m_pApiServer.reset(new Ipponboard::ApiServer(m_pController.get(), &m_fighterManager, this));
 	if (m_pApiServer->StartListening(PORT))
 	{
 		qInfo() << "API Server started on port" << PORT;

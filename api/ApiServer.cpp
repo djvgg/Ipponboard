@@ -8,10 +8,11 @@
 
 using namespace Ipponboard;
 
-ApiServer::ApiServer(Controller* pController, QObject* parent)
+ApiServer::ApiServer(Controller* pController, FighterManager* pFighterManager, QObject* parent)
     : QTcpServer(parent)
     , m_pController(pController)
-    , m_pEndpoints(std::make_unique<ApiEndpoints>(pController))
+    , m_pFighterManager(pFighterManager)
+    , m_pEndpoints(std::make_unique<ApiEndpoints>(pController, pFighterManager))
 {
 }
 
@@ -90,7 +91,11 @@ void ApiServer::handleRequest(QTcpSocket* pSocket)
             HttpResponse::Send(pSocket, HttpResponse::StatusCode::BadRequest, "Bad Request: Invalid JSON");
             return;
         }
-        m_pEndpoints->HandlePostFighter(pSocket, doc.object());
+        auto result = m_pEndpoints->HandlePostFighters(pSocket, doc.object());
+        if (result.success)
+        {
+            emit fightersAdded(result.category, result.weightClass, result.fighter1Name, result.fighter2Name);
+        }
     }
     else
     {

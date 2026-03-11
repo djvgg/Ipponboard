@@ -10,6 +10,7 @@
 #include "../base/FighterManagerDlg.h"
 #include "../base/View.h"
 #include "../core/Controller.h"
+#include "../api/ApiServer.h"
 
 #include "../core/Fighter.h"
 
@@ -53,6 +54,12 @@ void MainWindow::Init()
 	m_pCategoryManager.reset(new FightCategoryMgr());
 
 	MainWindowBase::Init();
+
+	if (m_pApiServer)
+	{
+		connect(m_pApiServer.get(), &Ipponboard::ApiServer::fightersAdded,
+				this, &MainWindow::onFightReceived);
+	}
 
 	// init tournament classes (if there are none present)
 	for (int i(0); i < m_pCategoryManager->CategoryCount(); ++i)
@@ -189,14 +196,23 @@ void MainWindow::on_comboBox_weight_class_currentIndexChanged(const QString& s)
 	m_pSecondaryView->UpdateView();
 }
 
+// TODO TOP -verstehen
 void MainWindow::update_fighter_name_completer(const QString& weight)
 {
-	// filter fighters for suitable
+	// Filterung der Kämpfer nach Gewicht UND Kategorie
 	m_CurrentFighterNames.clear();
+	const QString category = m_pUi->comboBox_weight_class->currentText();
+
+	// Momentane Auswahl speichern ("retten")
+	QString currentFirst = m_pUi->comboBox_name_first->currentText();
+	QString currentSecond = m_pUi->comboBox_name_second->currentText();
 
 	for (const Ipponboard::Fighter & f : m_fighterManager.m_fighters)
 	{
-		if (f.weight == weight || f.weight.isEmpty())
+		bool categoryMatch = f.category == category || f.category.isEmpty();
+		bool weightMatch = f.weight == weight || f.weight.isEmpty();
+
+		if (categoryMatch && weightMatch)
 		{
 			const QString fullName =
 				QString("%1 %2").arg(f.first_name, f.last_name);
@@ -207,16 +223,17 @@ void MainWindow::update_fighter_name_completer(const QString& weight)
 
 	m_CurrentFighterNames.sort(); // TODO TOP - Fighter Sortieren
 
-	for (const QString& name : m_CurrentFighterNames) // TODO TOP - löschen
-    {
-       std::cout << "Liste der Fighter: " << name.toStdString() << std::endl; // TODO TOP - löschen
-    }
-
-
+	m_pUi->comboBox_name_first->blockSignals(true);
 	m_pUi->comboBox_name_first->clear();
 	m_pUi->comboBox_name_first->addItems(m_CurrentFighterNames);
+	m_pUi->comboBox_name_first->setCurrentText(currentFirst);
+	m_pUi->comboBox_name_first->blockSignals(false);
+
+	m_pUi->comboBox_name_second->blockSignals(true);
 	m_pUi->comboBox_name_second->clear();
 	m_pUi->comboBox_name_second->addItems(m_CurrentFighterNames);
+	m_pUi->comboBox_name_second->setCurrentText(currentSecond);
+	m_pUi->comboBox_name_second->blockSignals(false);
 }
 
 void MainWindow::update_fighters(const QString& s) // TODO TOP, Fighter werden geupdatet
@@ -433,4 +450,54 @@ void MainWindow::UpdateGoldenScoreView()
 {
 	m_pUi->checkBox_golden_score->setEnabled(m_pController->GetRules()->IsOption_OpenEndGoldenScore());
 	m_pUi->checkBox_golden_score->setChecked(m_pController->IsGoldenScore());
+}
+// TODO TOP - verstehen09u
+void MainWindow::onFightReceived(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name)
+{
+	// Signale blockieren, damit wir kein "Flimmern" oder falsche Logs (wie Ben Schmidt) haben
+	m_pUi->comboBox_weight_class->blockSignals(true);
+	m_pUi->comboBox_weight->blockSignals(true);
+	m_pUi->comboBox_name_first->blockSignals(true);
+	m_pUi->comboBox_name_second->blockSignals(true);
+
+	// 1. Altersklasse (Kategorie) auswählen
+	int indexCategory = m_pUi->comboBox_weight_class->findText(category);
+	if (indexCategory != -1)
+	{
+		m_pUi->comboBox_weight_class->setCurrentIndex(indexCategory);
+	}
+	else
+	{
+		m_pUi->comboBox_weight_class->setCurrentText(category);
+	}
+
+	// 2. Gewichtsklasse setzen
+	int indexWeight = m_pUi->comboBox_weight->findText(weightClass);
+	if (indexWeight != -1)
+	{
+		m_pUi->comboBox_weight->setCurrentIndex(indexWeight);
+	}
+	else
+	{
+		m_pUi->comboBox_weight->setCurrentText(weightClass);
+	}
+
+	// 3. Listen aktualisieren
+	update_fighter_name_completer(weightClass);
+
+	// 4. Exakte Namen setzen
+	m_pUi->comboBox_name_first->setCurrentText(fighter1Name);
+	m_pUi->comboBox_name_second->setCurrentText(fighter2Name);
+
+	// Signale wieder freigeben
+	m_pUi->comboBox_weight_class->blockSignals(false);
+	m_pUi->comboBox_weight->blockSignals(false);
+	m_pUi->comboBox_name_first->blockSignals(false);
+	m_pUi->comboBox_name_second->blockSignals(false);
+
+	// Jetzt EINMAL die Logik triggern, damit Ipponboard die neuen Daten übernimmt
+	on_comboBox_weight_class_currentIndexChanged(category);
+	on_comboBox_weight_currentIndexChanged(weightClass);
+	on_comboBox_name_first_currentIndexChanged(fighter1Name);
+	on_comboBox_name_second_currentIndexChanged(fighter2Name);
 }

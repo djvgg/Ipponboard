@@ -65,6 +65,7 @@ protected slots:
 	void on_comboBox_weight_class_currentIndexChanged(const QString&);
 
 private slots:
+	void onFightReceived(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name);
 	void on_actionAutoAdjustPoints_toggled(bool checked) override;
 	void on_actionViewInfoBar_toggled(bool checked);
 	void on_toolButton_viewSecondaryScreen_toggled();
