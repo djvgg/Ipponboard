@@ -64,7 +64,7 @@ protected slots:
 	void on_checkBox_golden_score_clicked(bool checked);
 	void on_comboBox_weight_class_currentIndexChanged(const QString&);
 
-private slots:
+private slots: // TODO TOP - verstehen
 	void onFightReceived(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name);
 	void on_actionAutoAdjustPoints_toggled(bool checked) override;
 	void on_actionViewInfoBar_toggled(bool checked);

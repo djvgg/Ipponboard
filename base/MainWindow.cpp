@@ -222,7 +222,6 @@ void MainWindow::update_fighter_name_completer(const QString& weight)
 	}
 
 	m_CurrentFighterNames.sort(); // TODO TOP - Fighter Sortieren
-
 	m_pUi->comboBox_name_first->blockSignals(true);
 	m_pUi->comboBox_name_first->clear();
 	m_pUi->comboBox_name_first->addItems(m_CurrentFighterNames);
@@ -451,53 +450,92 @@ void MainWindow::UpdateGoldenScoreView()
 	m_pUi->checkBox_golden_score->setEnabled(m_pController->GetRules()->IsOption_OpenEndGoldenScore());
 	m_pUi->checkBox_golden_score->setChecked(m_pController->IsGoldenScore());
 }
-// TODO TOP - verstehen09u
+// TODO TOP - durchgehen und ggf. anpassen
 void MainWindow::onFightReceived(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name)
 {
-	// Signale blockieren, damit wir kein "Flimmern" oder falsche Logs (wie Ben Schmidt) haben
+	// Block signals to prevent flickering/recursion while we set multiple values
 	m_pUi->comboBox_weight_class->blockSignals(true);
 	m_pUi->comboBox_weight->blockSignals(true);
 	m_pUi->comboBox_name_first->blockSignals(true);
 	m_pUi->comboBox_name_second->blockSignals(true);
 
-	// 1. Altersklasse (Kategorie) auswählen
+	// 1. Select the Category with "Fuzzy" matching
+	// (e.g. if API sends "F18+" but Ipponboard only has "F")
 	int indexCategory = m_pUi->comboBox_weight_class->findText(category);
+	if (indexCategory == -1)
+	{
+		for (int i = 0; i < m_pUi->comboBox_weight_class->count(); ++i)
+		{
+			QString item = m_pUi->comboBox_weight_class->itemText(i);
+			// Check if the known category is a prefix (e.g. "F" is in "F18+")
+			if (!item.isEmpty() && category.startsWith(item))
+			{
+				indexCategory = i;
+				break;
+			}
+		}
+	}
+
+	QString finalCategory = category;
 	if (indexCategory != -1)
 	{
 		m_pUi->comboBox_weight_class->setCurrentIndex(indexCategory);
+		finalCategory = m_pUi->comboBox_weight_class->itemText(indexCategory);
 	}
 	else
 	{
 		m_pUi->comboBox_weight_class->setCurrentText(category);
 	}
+	
+	// Trigger category logic (fills the weight list with weights of the matched category)
+	on_comboBox_weight_class_currentIndexChanged(finalCategory);
 
-	// 2. Gewichtsklasse setzen
+	// 2. Select the Weight (now that the list is populated)
 	int indexWeight = m_pUi->comboBox_weight->findText(weightClass);
+	
+	if (indexWeight == -1)
+	{
+		// Try to find it with partial match (handle "kg" suffix mismatch)
+		QString simpleWeight = weightClass;
+		simpleWeight.remove("kg", Qt::CaseInsensitive).trimmed();
+
+		for (int i = 0; i < m_pUi->comboBox_weight->count(); ++i)
+		{
+			QString itemText = m_pUi->comboBox_weight->itemText(i);
+			if (itemText.startsWith(simpleWeight, Qt::CaseInsensitive))
+			{
+				indexWeight = i;
+				break;
+			}
+		}
+	}
+
+	// IF STILL NOT FOUND: Add it manually so the dropdown isn't empty!
+	if (indexWeight == -1)
+	{
+		m_pUi->comboBox_weight->addItem(weightClass);
+		indexWeight = m_pUi->comboBox_weight->findText(weightClass);
+	}
+
 	if (indexWeight != -1)
 	{
 		m_pUi->comboBox_weight->setCurrentIndex(indexWeight);
 	}
-	else
-	{
-		m_pUi->comboBox_weight->setCurrentText(weightClass);
-	}
+	
+	// Trigger weight logic (updates views and fighter search)
+	on_comboBox_weight_currentIndexChanged(weightClass);
 
-	// 3. Listen aktualisieren
-	update_fighter_name_completer(weightClass);
-
-	// 4. Exakte Namen setzen
+	// 3. Set exact names
 	m_pUi->comboBox_name_first->setCurrentText(fighter1Name);
 	m_pUi->comboBox_name_second->setCurrentText(fighter2Name);
 
-	// Signale wieder freigeben
+	// Trigger fighter update logic
+	on_comboBox_name_first_currentIndexChanged(fighter1Name);
+	on_comboBox_name_second_currentIndexChanged(fighter2Name);
+
+	// Unblock signals
 	m_pUi->comboBox_weight_class->blockSignals(false);
 	m_pUi->comboBox_weight->blockSignals(false);
 	m_pUi->comboBox_name_first->blockSignals(false);
 	m_pUi->comboBox_name_second->blockSignals(false);
-
-	// Jetzt EINMAL die Logik triggern, damit Ipponboard die neuen Daten übernimmt
-	on_comboBox_weight_class_currentIndexChanged(category);
-	on_comboBox_weight_currentIndexChanged(weightClass);
-	on_comboBox_name_first_currentIndexChanged(fighter1Name);
-	on_comboBox_name_second_currentIndexChanged(fighter2Name);
 }

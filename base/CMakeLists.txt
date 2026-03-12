@@ -122,6 +122,8 @@ set(SOURCES
     ../api/HttpResponse.cpp
     ../api/ApiEndpoints.h
     ../api/ApiEndpoints.cpp
+    ../api/FightDataDispatcher.h
+    ../api/FightDataDispatcher.cpp
 )
 
 set(FORMS

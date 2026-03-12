@@ -8,17 +8,19 @@ void HttpResponse::Send(QTcpSocket* pSocket, StatusCode code, const QString& bod
     int statusInt = static_cast<int>(code);
     QString statusText = GetStatusText(code);
 
+    QByteArray bodyUtf8 = body.toUtf8();
     QString response = QString("HTTP/1.1 %1 %2\r\n"
                                "Content-Type: text/plain\r\n"
-                               "\r\n"
-                               "%3")
+                               "Content-Length: %3\r\n"
+                               "Connection: keep-alive\r\n"
+                               "\r\n")
                            .arg(statusInt)
                            .arg(statusText)
-                           .arg(body);
+                           .arg(bodyUtf8.length());
 
-    pSocket->write(response.toUtf8()); // Antwort senden
+    pSocket->write(response.toUtf8());
+    pSocket->write(bodyUtf8);
     pSocket->waitForBytesWritten(1000);
-    pSocket->disconnectFromHost();
 }
 
 QString HttpResponse::GetStatusText(StatusCode code)

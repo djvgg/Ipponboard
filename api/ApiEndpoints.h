@@ -19,6 +19,7 @@ struct PostFightersResult {
     QString weightClass;
     QString fighter1Name;
     QString fighter2Name;
+    QString callbackUrl;
 };
 
 class ApiEndpoints

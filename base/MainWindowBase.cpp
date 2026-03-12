@@ -16,6 +16,7 @@
 #include "../core/Rules.h"
 #include "../util/path_helpers.h"
 #include "../api/ApiServer.h"
+#include "../api/FightDataDispatcher.h"
 #include <iostream> // TODO TOP
 
 #include <QApplication>
@@ -42,7 +43,7 @@ MainWindowBase::MainWindowBase(QWidget* parent)
 	, m_pController(new Ipponboard::Controller())
 	, m_fighterManager()
 	, m_Language("en")
-	, m_MatLabel("  Ipponboard   ")
+	, m_MatLabel("  Ipponboard   ") // TODO TOP - Mat Label entsprechend eintragen
 	, m_weights()
 	, m_FighterNameFont("Calibri", 12, QFont::Bold, false)
 	, m_secondScreenNo(0)
@@ -103,12 +104,20 @@ void MainWindowBase::Init()
 	m_pController->RegisterView(static_cast<IView*>(this));
 	m_pController->RegisterView(static_cast<IGoldenScoreView*>(this));
 
-	// Start API server
+	// Start API server // TODO TOP - verbessern ?
 	m_pApiServer.reset(new Ipponboard::ApiServer(m_pController.get(), &m_fighterManager, this));
 	if (m_pApiServer->StartListening(PORT))
 	{
 		qInfo() << "API Server started on port" << PORT;
 		std::cout << "API Server started" << std::endl;
+
+		// Create and register the dispatcher
+		auto pDispatcher = new Ipponboard::FightDataDispatcher(m_pController.get()); // TODO TOP - Live Daten übertragen
+		m_pController->RegisterView(pDispatcher);
+		
+		// Connect dispatcher to server for broadcasting
+		connect(pDispatcher, &Ipponboard::FightDataDispatcher::dataUpdated,
+				m_pApiServer.get(), &Ipponboard::ApiServer::BroadcastData);
 	}
 	else
 	{

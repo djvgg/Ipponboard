@@ -67,6 +67,7 @@ PostFightersResult ApiEndpoints::HandlePostFighters(QTcpSocket* pSocket, const Q
     result.weightClass = fighter1.weight; // Beide Fighter sollten das gleiche Gewicht haben
     result.fighter1Name = QString("%1 %2").arg(fighter1.first_name, fighter1.last_name);
     result.fighter2Name = QString("%1 %2").arg(fighter2.first_name, fighter2.last_name);
+    result.callbackUrl = json["callback"].toString();
 
     return result;
 }
