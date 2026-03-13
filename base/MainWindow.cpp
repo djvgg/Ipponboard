@@ -196,7 +196,7 @@ void MainWindow::on_comboBox_weight_class_currentIndexChanged(const QString& s)
 	m_pSecondaryView->UpdateView();
 }
 
-// TODO TOP -verstehen
+// TODO TOP
 void MainWindow::update_fighter_name_completer(const QString& weight)
 {
 	// Filterung der Kämpfer nach Gewicht UND Kategorie
