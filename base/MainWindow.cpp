@@ -187,7 +187,15 @@ void MainWindow::on_comboBox_weight_class_currentIndexChanged(const QString& s)
 	// trigger round time update
 	on_checkBox_golden_score_clicked(m_pUi->checkBox_golden_score->checkState());
 
-	m_pController->OverrideRoundTimeOfFightMode(category.GetRoundTime());
+	// SAFEGUARD: Don't override if category lookup resulted in 0 seconds
+	if (category.GetRoundTime() > 0)
+	{
+		m_pController->OverrideRoundTimeOfFightMode(category.GetRoundTime());
+	}
+	else
+	{
+		std::cout << "DEBUG: Category " << s.toStdString() << " has 0s round time, keeping previous setting." << std::endl;
+	}
 	m_pController->DoAction(Ipponboard::eAction_ResetAll);
 
 	m_pPrimaryView->SetCategory(s);
@@ -464,13 +472,18 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 	int indexCategory = m_pUi->comboBox_weight_class->findText(category);
 	if (indexCategory == -1)
 	{
+		// Try fuzzy matching: check if any existing category is contained in or starts with the requested string
 		for (int i = 0; i < m_pUi->comboBox_weight_class->count(); ++i)
 		{
 			QString item = m_pUi->comboBox_weight_class->itemText(i);
-			// Check if the known category is a prefix (e.g. "F" is in "F18+")
-			if (!item.isEmpty() && category.startsWith(item))
+			if (item.isEmpty()) continue;
+
+			// Example: "MU18" matches "U18" (substring) or "U18" matches "MU18" (starts with)
+			if (category.contains(item, Qt::CaseInsensitive) || item.contains(category, Qt::CaseInsensitive))
 			{
 				indexCategory = i;
+				std::cout << "DEBUG: Fuzzy matched category '" << category.toStdString() 
+						  << "' to existing '" << item.toStdString() << "'" << std::endl;
 				break;
 			}
 		}
@@ -484,6 +497,7 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 	}
 	else
 	{
+		std::cout << "DEBUG: Category '" << category.toStdString() << "' not found, using as is." << std::endl;
 		m_pUi->comboBox_weight_class->setCurrentText(category);
 	}
 	

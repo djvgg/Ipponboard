@@ -25,6 +25,9 @@ signals:
 
 private:
     IController* m_pController;
+    int m_lastFightIndex = -1;
+    int m_lastRoundIndex = -1;
+    FighterEnum m_lastWinner = FighterEnum::Nobody;
 };
 
 }

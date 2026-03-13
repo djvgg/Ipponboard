@@ -1,4 +1,4 @@
-﻿// Copyright 2018 Florian Muecke. All rights reserved.
+// Copyright 2018 Florian Muecke. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.txt file.
 
@@ -372,6 +372,23 @@ FighterEnum Controller::GetLead() const
 	}
 
 	return winner;
+}
+
+//=========================================================
+FighterEnum Controller::GetWinner() const
+//=========================================================
+{
+	if (current_fight().HasWon(FighterEnum::First))
+	{
+		return FighterEnum::First;
+	}
+
+	if (current_fight().HasWon(FighterEnum::Second))
+	{
+		return FighterEnum::Second;
+	}
+
+	return FighterEnum::Nobody;
 }
 
 //=========================================================

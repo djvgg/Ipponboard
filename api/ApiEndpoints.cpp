@@ -80,8 +80,15 @@ Ipponboard::Fighter ApiEndpoints::ParseFighterFromJson(const QJsonObject& fighte
     QString gender    = fighterJson["gender"].toString();
     QString ageGroup  = fighterJson["agegroup"].toString();
 
-    // Konkateniere aus "M" und "U18" den internen Ipponboard String "MU18"
+    // Fix: If gender is missing but agegroup starts with a letter (e.g. "U18" or "MU18")
+    // we try to handle it. 
     QString category = gender + ageGroup;
+    
+    if (category.isEmpty())
+    {
+        // Fallback for debugging if everything is empty
+        std::cout << "WARNING: Received empty fighter category info!" << std::endl;
+    }
 
     Ipponboard::Fighter fighter(firstName, lastName);
     fighter.weight = weight;

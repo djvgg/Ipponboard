@@ -118,13 +118,17 @@ QString Fight::GetTimeRemainingString() const
 
 bool Fight::HasWon(FighterEnum who) const // TODO TOP, wer hat gewonnen?
 {
-	//unused: const FighterEnum other = GetUkeFromTori(who);
+	if (who == FighterEnum::Nobody || !rules)
+	{
+		return false;
+	}
 
 	auto result = rules->CompareScore(*this);
-	std::cout << "CompareScore result: " << result << std::endl;
-	if (who == FighterEnum::First && result < 0 || who == FighterEnum::Second && result > 0)
+	//std::cout << "CompareScore result: " << result << std::endl;
+	
+	if ((who == FighterEnum::First && result < 0) || (who == FighterEnum::Second && result > 0))
 	{
-		std::cout << "Winner: " << fighters[static_cast<int>(who)].name.toStdString() << std::endl;
+		//std::cout << "Winner: " << fighters[static_cast<int>(who)].name.toStdString() << std::endl;
 		return true;
 	}
 

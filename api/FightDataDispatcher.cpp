@@ -1,11 +1,12 @@
 #include "FightDataDispatcher.h"
-#include "../core/iController.h"
+#include "../core/Controller.h"
+#include "../core/Fight.h"
 #include "../core/Score.h"
 #include "../core/Enums.h"
+#include "../core/Rules.h"
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QJsonValue>
-#include "../core/Rules.h"
 #include <iostream>
 
 using namespace Ipponboard;
@@ -17,68 +18,96 @@ FightDataDispatcher::FightDataDispatcher(IController* pController)
 
 void FightDataDispatcher::UpdateView()
 {
-    if (!m_pController)
+    Controller* pController = dynamic_cast<Controller*>(m_pController);
+    if (!pController)
     {
         return;
     }
 
-    std::cout << "DEBUG: Dispatcher::UpdateView triggered" << std::endl;
+    int currentFight = pController->GetCurrentFight();
+    int currentRound = pController->GetCurrentRound();
+
+    // Get the actual fight object to check its state
+    Fight const& fight = pController->GetFight(currentRound, currentFight);
+
+    // We only want to notify when the fight is DECIDED.
+    FighterEnum winner = FighterEnum::Nobody;
+    auto rules = pController->GetRules();
+
+    bool s1ippon = fight.GetScore1().Ippon() > 0 || (rules && rules->IsAwaseteIppon(fight.GetScore1()));
+    bool s2ippon = fight.GetScore2().Ippon() > 0 || (rules && rules->IsAwaseteIppon(fight.GetScore2()));
+    bool s1hansoku = fight.GetScore1().Hansokumake();
+    bool s2hansoku = fight.GetScore2().Hansokumake();
+
+    if (s1ippon)
+    {
+        winner = FighterEnum::First;
+    }
+    else if (s2ippon)
+    {
+        winner = FighterEnum::Second;
+    }
+    else if (s1hansoku)
+    {
+        winner = FighterEnum::Second;
+    }
+    else if (s2hansoku)
+    {
+        winner = FighterEnum::First;
+    }
+    else if (fight.is_saved)
+    {
+        winner = pController->GetWinner();
+    }
+
+    // Check if we already reported a winner for this fight
+    if (m_lastFightIndex == currentFight && 
+        m_lastRoundIndex == currentRound && 
+        m_lastWinner == winner)
+    {
+        return;
+    }
+
+    // Only send if there is a winner
+    if (winner == FighterEnum::Nobody)
+    {
+        // If it's a new fight or winner was cleared, update our state
+        if (m_lastFightIndex != currentFight || m_lastRoundIndex != currentRound || m_lastWinner != FighterEnum::Nobody)
+        {
+            m_lastFightIndex = currentFight;
+            m_lastRoundIndex = currentRound;
+            m_lastWinner = FighterEnum::Nobody;
+            std::cout << "DEBUG: Dispatcher::UpdateView - No winner (resetting last reported winner)" << std::endl;
+        }
+        return;
+    }
+
+    // Update state
+    m_lastFightIndex = currentFight;
+    m_lastRoundIndex = currentRound;
+    m_lastWinner = winner;
+
+    std::cout << "DEBUG: Dispatcher::UpdateView - WINNER DECIDED: " 
+              << (winner == FighterEnum::First ? "fighter1" : "fighter2") 
+              << " (S1_Ippon:" << (s1ippon?"Y":"N") 
+              << ", S2_Ippon:" << (s2ippon?"Y":"N")
+              << ", S1_HM:" << (s1hansoku?"Y":"N")
+              << ", S2_HM:" << (s2hansoku?"Y":"N")
+              << ", Saved:" << (fight.is_saved?"Y":"N") << ")" << std::endl;
+
     QJsonObject data;
     
     // Fighter information
     QJsonObject fighter1;
-    fighter1["name"] = QJsonValue(m_pController->GetFighterName(FighterEnum::First));
-    fighter1["ippon"] = QJsonValue(m_pController->GetScore(FighterEnum::First, Score::Point::Ippon));
-    fighter1["wazaari"] = QJsonValue(m_pController->GetScore(FighterEnum::First, Score::Point::Wazaari));
-    fighter1["yuko"] = QJsonValue(m_pController->GetScore(FighterEnum::First, Score::Point::Yuko));
-    fighter1["shido"] = QJsonValue(m_pController->GetScore(FighterEnum::First, Score::Point::Shido));
+    fighter1["name"] = QJsonValue(pController->GetFighterName(FighterEnum::First));
     
     QJsonObject fighter2;
-    fighter2["name"] = QJsonValue(m_pController->GetFighterName(FighterEnum::Second));
-    fighter2["ippon"] = QJsonValue(m_pController->GetScore(FighterEnum::Second, Score::Point::Ippon));
-    fighter2["wazaari"] = QJsonValue(m_pController->GetScore(FighterEnum::Second, Score::Point::Wazaari));
-    fighter2["yuko"] = QJsonValue(m_pController->GetScore(FighterEnum::Second, Score::Point::Yuko));
-    fighter2["shido"] = QJsonValue(m_pController->GetScore(FighterEnum::Second, Score::Point::Shido));
+    fighter2["name"] = QJsonValue(pController->GetFighterName(FighterEnum::Second));
     
     data["fighter1"] = QJsonValue(fighter1);
     data["fighter2"] = QJsonValue(fighter2);
-    
-    // Fight metadata
-    data["time"] = QJsonValue(m_pController->GetTimeText(eTimer_Main));
-    data["isGoldenScore"] = QJsonValue(m_pController->IsGoldenScore());
-    
-    // Winner detection logic
-    QString winnerStr = "none";
-    auto rules = m_pController->GetRules();
-    
-    bool firstHasIppon = m_pController->GetScore(FighterEnum::First, Score::Point::Ippon) > 0;
-    bool secondHasIppon = m_pController->GetScore(FighterEnum::Second, Score::Point::Ippon) > 0;
-    bool firstHasHansokumake = m_pController->GetScore(FighterEnum::First, Score::Point::Hansokumake) > 0;
-    bool secondHasHansokumake = m_pController->GetScore(FighterEnum::Second, Score::Point::Hansokumake) > 0;
-    
-    int wazaari1 = m_pController->GetScore(FighterEnum::First, Score::Point::Wazaari);
-    int wazaari2 = m_pController->GetScore(FighterEnum::Second, Score::Point::Wazaari);
-    
-    bool firstHasAwaseteIppon = rules->IsOption_AwaseteIppon() && wazaari1 >= rules->GetMaxWazaariCount();
-    bool secondHasAwaseteIppon = rules->IsOption_AwaseteIppon() && wazaari2 >= rules->GetMaxWazaariCount();
-
-    if (firstHasIppon || firstHasAwaseteIppon || secondHasHansokumake)
-    {
-        winnerStr = "fighter1";
-    }
-    else if (secondHasIppon || secondHasAwaseteIppon || firstHasHansokumake)
-    {
-        winnerStr = "fighter2";
-    }
-    else if (m_pController->GetCurrentState() == eState_TimerStopped)
-    {
-        // If timer is stopped and we have a lead (e.g. end of fight), consider them winner
-        FighterEnum lead = m_pController->GetLead();
-        if (lead == FighterEnum::First) winnerStr = "fighter1";
-        else if (lead == FighterEnum::Second) winnerStr = "fighter2";
-    }
-    
-    data["winner"] = QJsonValue(winnerStr);
+    data["time"] = QJsonValue(pController->GetTimeText(eTimer_Main));
+    data["winner"] = QJsonValue(winner == FighterEnum::First ? "fighter1" : "fighter2");
 
     emit dataUpdated(data);
 }
