@@ -9,7 +9,12 @@ using namespace Ipponboard;
 
 QStringList FightCategory::GetWeightsList() const
 {
-	return QString::fromStdString(weights).split(';');
+	QString s = QString::fromStdString(weights);
+    if (s.isEmpty())
+    {
+        return QStringList();
+    }
+    return s.split(';', Qt::SkipEmptyParts);
 }
 
 QString FightCategory::GetRoundTimeStr() const

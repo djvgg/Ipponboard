@@ -59,8 +59,8 @@ protected slots:
 	/* specific private slots */
 	void on_actionManageCategories_triggered();
 	void on_comboBox_weight_currentIndexChanged(const QString&);
-	void on_comboBox_name_second_currentIndexChanged(const QString&);
-	void on_comboBox_name_first_currentIndexChanged(const QString&);
+	void on_comboBox_name_second_activated(const QString&);
+	void on_comboBox_name_first_activated(const QString&);
 	void on_checkBox_golden_score_clicked(bool checked);
 	void on_comboBox_weight_class_currentIndexChanged(const QString&);
 

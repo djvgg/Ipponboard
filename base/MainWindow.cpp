@@ -143,18 +143,22 @@ void MainWindow::on_comboBox_weight_currentIndexChanged(const QString& s)
 	m_pSecondaryView->UpdateView();
 }
 
-void MainWindow::on_comboBox_name_first_currentIndexChanged(const QString& s) // TODO TOP - First Fighter
+void MainWindow::on_comboBox_name_first_activated(const QString& s) // TODO TOP - First Fighter
 {
 	update_fighters(s);
 	std::cout << "First Fighter Name: " << s.toStdString() << std::endl; // TODO TOP
 	m_pController->SetFighterName(FighterEnum::First, s);
+	m_pPrimaryView->UpdateView();
+	m_pSecondaryView->UpdateView();
 }
 
-void MainWindow::on_comboBox_name_second_currentIndexChanged(const QString& s) // TODO TOP - Second Fighter
+void MainWindow::on_comboBox_name_second_activated(const QString& s) // TODO TOP - Second Fighter
 {
 	update_fighters(s);
 	std::cout << "Second Fighter Name: " << s.toStdString() << std::endl; // TODO TOP
 	m_pController->SetFighterName(FighterEnum::Second, s);
+	m_pPrimaryView->UpdateView();
+	m_pSecondaryView->UpdateView();
 }
 
 void MainWindow::on_checkBox_golden_score_clicked(bool checked)
@@ -260,12 +264,18 @@ void MainWindow::update_fighters(const QString& s) // TODO TOP, Fighter werden g
 	QString firstName = s;
 	QString lastName;
 
-	int pos = s.indexOf(' ');
+	// Wir suchen das LETZTE Leerzeichen für die Trennung
+	int pos = s.lastIndexOf(' ');
 
-	if (pos < s.size())
+	if (pos != -1)
 	{
-		firstName = s.left(pos);
-		lastName = s.mid(pos + 1);
+		firstName = s.left(pos).trimmed();
+		lastName = s.mid(pos + 1).trimmed();
+	}
+	else
+	{
+		firstName = "";
+		lastName = s.trimmed();
 	}
 
 	const QString weight = m_pUi->comboBox_weight->currentText();
@@ -476,24 +486,8 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 	m_pUi->comboBox_name_first->blockSignals(true);
 	m_pUi->comboBox_name_second->blockSignals(true);
 
-	// 1. Select the Category with "Fuzzy" matching
-	int indexCategory = m_pUi->comboBox_weight_class->findText(category);
-	if (indexCategory == -1)
-	{
-		for (int i = 0; i < m_pUi->comboBox_weight_class->count(); ++i)
-		{
-			QString item = m_pUi->comboBox_weight_class->itemText(i);
-			if (item.isEmpty()) continue;
-
-			if (category.contains(item, Qt::CaseInsensitive) || item.contains(category, Qt::CaseInsensitive))
-			{
-				indexCategory = i;
-				std::cout << "DEBUG: Fuzzy matched category '" << category.toStdString() 
-						  << "' to existing '" << item.toStdString() << "'" << std::endl;
-				break;
-			}
-		}
-	}
+	// 1. Select the Category
+	int indexCategory = m_pUi->comboBox_weight_class->findText(category, Qt::MatchExactly);
 
 	QString finalCategory = category;
 	if (indexCategory != -1)
@@ -510,7 +504,7 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 	on_comboBox_weight_class_currentIndexChanged(finalCategory);
 
 	// 2. Select the Weight
-	int indexWeight = m_pUi->comboBox_weight->findText(weightClass);
+	int indexWeight = m_pUi->comboBox_weight->findText(weightClass, Qt::MatchExactly);
 	if (indexWeight == -1)
 	{
 		QString simpleWeight = weightClass;
@@ -519,7 +513,8 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 		for (int i = 0; i < m_pUi->comboBox_weight->count(); ++i)
 		{
 			QString itemText = m_pUi->comboBox_weight->itemText(i);
-			if (itemText.startsWith(simpleWeight, Qt::CaseInsensitive))
+			if (itemText.startsWith(simpleWeight, Qt::CaseInsensitive) || 
+                itemText.contains(simpleWeight, Qt::CaseInsensitive))
 			{
 				indexWeight = i;
 				break;
@@ -527,15 +522,14 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 		}
 	}
 
-	if (indexWeight == -1)
-	{
-		m_pUi->comboBox_weight->addItem(weightClass);
-		indexWeight = m_pUi->comboBox_weight->findText(weightClass);
-	}
-
 	if (indexWeight != -1)
 	{
 		m_pUi->comboBox_weight->setCurrentIndex(indexWeight);
+	}
+	else
+	{
+		m_pUi->comboBox_weight->addItem(weightClass);
+		m_pUi->comboBox_weight->setCurrentText(weightClass);
 	}
 	
 	// Trigger weight logic
@@ -546,8 +540,8 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 	m_pUi->comboBox_name_second->setCurrentText(fighter2Name);
 
 	// Trigger fighter update logic
-	on_comboBox_name_first_currentIndexChanged(fighter1Name);
-	on_comboBox_name_second_currentIndexChanged(fighter2Name);
+	on_comboBox_name_first_activated(fighter1Name);
+	on_comboBox_name_second_activated(fighter2Name);
 
 	// Unblock signals
 	m_pUi->comboBox_weight_class->blockSignals(false);

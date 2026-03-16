@@ -246,13 +246,7 @@ void FightCategoryMgr::load_default_categories()
 {
 	m_Categories.clear();
 
-	FightCategory t("M");
-	t.SetWeights("-60kg;-66kg;-73kg;-81kg;-90kg;-100kg;+100kg");
-	t.SetRoundTime(4 * 60);
-	t.SetGoldenScoreTime(0);
-	AddCategory(t);
-
-	t = FightCategory("MU21");
+	FightCategory t("M18+");
 	t.SetWeights("-60kg;-66kg;-73kg;-81kg;-90kg;-100kg;+100kg");
 	t.SetRoundTime(4 * 60);
 	t.SetGoldenScoreTime(0);
@@ -267,7 +261,7 @@ void FightCategoryMgr::load_default_categories()
 	t = FightCategory("MU15");
 	t.SetWeights("-34kg;-37kg;-40kg;-43kg;-46kg;-50kg;-55kg;-60kg;-66kg;+66kg");
 	t.SetRoundTime(3 * 60);
-	t.SetGoldenScoreTime(3 * 60);
+	t.SetGoldenScoreTime(180);
 	AddCategory(t);
 
 	t = FightCategory("MU13");
@@ -276,13 +270,7 @@ void FightCategoryMgr::load_default_categories()
 	t.SetGoldenScoreTime(0);
 	AddCategory(t);
 
-	t = FightCategory("F");
-	t.SetWeights("-48kg;-52kg;-57kg;-63kg;-70kg;-78kg;+78kg");
-	t.SetRoundTime(4 * 60);
-	t.SetGoldenScoreTime(0);
-	AddCategory(t);
-
-	t = FightCategory("FU21");
+	t = FightCategory("F18+");
 	t.SetWeights("-48kg;-52kg;-57kg;-63kg;-70kg;-78kg;+78kg");
 	t.SetRoundTime(4 * 60);
 	t.SetGoldenScoreTime(0);
@@ -297,12 +285,24 @@ void FightCategoryMgr::load_default_categories()
 	t = FightCategory("FU15");
 	t.SetWeights("-33kg;-36kg;-40kg;-44kg;-48kg;-52kg;-57kg;-63kg;+63kg");
 	t.SetRoundTime(3 * 60);
-	t.SetGoldenScoreTime(3 * 60);
+	t.SetGoldenScoreTime(180);
 	AddCategory(t);
 
 	t = FightCategory("FU13");
 	t.SetWeights("-27kg;-30kg;-33kg;-36kg;-40kg;-44kg;-48kg;-52kg;-57kg;+57kg");
 	t.SetRoundTime(3 * 60);
 	t.SetGoldenScoreTime(0);
+	AddCategory(t);
+
+	t = FightCategory("U11");
+	t.SetWeights("");
+	t.SetRoundTime(120);
+	t.SetGoldenScoreTime(60);
+	AddCategory(t);
+
+	t = FightCategory("U9");
+	t.SetWeights("");
+	t.SetRoundTime(120);
+	t.SetGoldenScoreTime(60);
 	AddCategory(t);
 }

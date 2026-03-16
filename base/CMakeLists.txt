@@ -171,6 +171,7 @@ target_include_directories(${APP_NAME} PRIVATE ${BOOST_DIR})
 
 # Copy data files
 add_custom_command(TARGET ${APP_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ROOT_DIR}/categories.config" "$<TARGET_FILE_DIR:${APP_NAME}>"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/TournamentModes.ini" "$<TARGET_FILE_DIR:${APP_NAME}>"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/clubs.config" "$<TARGET_FILE_DIR:${APP_NAME}>"
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/clubs" "$<TARGET_FILE_DIR:${APP_NAME}>/clubs"

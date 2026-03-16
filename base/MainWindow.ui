@@ -352,7 +352,7 @@
          </font>
         </property>
         <property name="toolTip">
-         <string>Kampfdaten an die Website senden</string>
+         <string>Kampfdaten an die Webseite senden</string>
         </property>
         <property name="focusPolicy">
          <enum>Qt::NoFocus</enum>
