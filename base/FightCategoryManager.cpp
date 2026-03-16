@@ -261,7 +261,7 @@ void FightCategoryMgr::load_default_categories()
 	t = FightCategory("MU15");
 	t.SetWeights("-34kg;-37kg;-40kg;-43kg;-46kg;-50kg;-55kg;-60kg;-66kg;+66kg");
 	t.SetRoundTime(3 * 60);
-	t.SetGoldenScoreTime(180);
+	t.SetGoldenScoreTime(3 * 60);
 	AddCategory(t);
 
 	t = FightCategory("MU13");
@@ -285,7 +285,7 @@ void FightCategoryMgr::load_default_categories()
 	t = FightCategory("FU15");
 	t.SetWeights("-33kg;-36kg;-40kg;-44kg;-48kg;-52kg;-57kg;-63kg;+63kg");
 	t.SetRoundTime(3 * 60);
-	t.SetGoldenScoreTime(180);
+	t.SetGoldenScoreTime(3 * 60);
 	AddCategory(t);
 
 	t = FightCategory("FU13");

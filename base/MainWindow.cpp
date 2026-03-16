@@ -87,7 +87,7 @@ void MainWindow::on_button_send_clicked()
 void MainWindow::on_actionManageCategories_triggered()
 {
 	//save categories before editing
-	m_pCategoryManager->SaveCategories(); // TODO TOP - Kategorien saven 
+	m_pCategoryManager->SaveCategories(); 
 
 	FightCategoryManagerDlg dlg(m_pCategoryManager, this);
 
@@ -143,19 +143,17 @@ void MainWindow::on_comboBox_weight_currentIndexChanged(const QString& s)
 	m_pSecondaryView->UpdateView();
 }
 
-void MainWindow::on_comboBox_name_first_activated(const QString& s) // TODO TOP - First Fighter
+void MainWindow::on_comboBox_name_first_activated(const QString& s)
 {
 	update_fighters(s);
-	std::cout << "First Fighter Name: " << s.toStdString() << std::endl; // TODO TOP
 	m_pController->SetFighterName(FighterEnum::First, s);
 	m_pPrimaryView->UpdateView();
 	m_pSecondaryView->UpdateView();
 }
 
-void MainWindow::on_comboBox_name_second_activated(const QString& s) // TODO TOP - Second Fighter
+void MainWindow::on_comboBox_name_second_activated(const QString& s)
 {
 	update_fighters(s);
-	std::cout << "Second Fighter Name: " << s.toStdString() << std::endl; // TODO TOP
 	m_pController->SetFighterName(FighterEnum::Second, s);
 	m_pPrimaryView->UpdateView();
 	m_pSecondaryView->UpdateView();
@@ -217,7 +215,6 @@ void MainWindow::on_comboBox_weight_class_currentIndexChanged(const QString& s)
 	m_pSecondaryView->UpdateView();
 }
 
-// TODO TOP
 void MainWindow::update_fighter_name_completer(const QString& weight)
 {
 	// Filterung der Kämpfer nach Gewicht UND Kategorie
@@ -242,7 +239,7 @@ void MainWindow::update_fighter_name_completer(const QString& weight)
 		}
 	}
 
-	m_CurrentFighterNames.sort(); // TODO TOP - Fighter Sortieren
+	m_CurrentFighterNames.sort();
 	m_pUi->comboBox_name_first->blockSignals(true);
 	m_pUi->comboBox_name_first->clear();
 	m_pUi->comboBox_name_first->addItems(m_CurrentFighterNames);
@@ -256,7 +253,7 @@ void MainWindow::update_fighter_name_completer(const QString& weight)
 	m_pUi->comboBox_name_second->blockSignals(false);
 }
 
-void MainWindow::update_fighters(const QString& s) // TODO TOP, Fighter werden geupdatet
+void MainWindow::update_fighters(const QString& s)
 {
 	if (s.isEmpty())
 		return;
@@ -282,7 +279,7 @@ void MainWindow::update_fighters(const QString& s) // TODO TOP, Fighter werden g
 	const QString club; // TODO: later
 	const QString category = m_pUi->comboBox_weight_class->currentText();
 
-	Ipponboard::Fighter fNew(firstName, lastName); // TODO TOP, Fighter addiing
+	Ipponboard::Fighter fNew(firstName, lastName);
 	fNew.club = club;
 	fNew.weight = weight;
 	fNew.category = category;
@@ -477,7 +474,7 @@ void MainWindow::UpdateGoldenScoreView()
 	m_pUi->checkBox_golden_score->setEnabled(m_pController->GetRules()->IsOption_OpenEndGoldenScore());
 	m_pUi->checkBox_golden_score->setChecked(m_pController->IsGoldenScore());
 }
-// TODO TOP - durchgehen und ggf. anpassen
+
 void MainWindow::onFightReceived(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name)
 {
 	// Block signals to prevent flickering/recursion while we set multiple values

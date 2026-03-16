@@ -4,46 +4,16 @@
 
 #include "Score.h"
 #include "Rules.h"
-#include <iostream> // TODO TOP
 
 using namespace Ipponboard;
-
-// TODO TOP - Methode löschen
-static const char* PointToString(Ipponboard::Score::Point p)
-{
-    using Point = Ipponboard::Score::Point;
-
-    switch (p)
-    {
-        case Point::Ippon: return "Ippon";
-        case Point::Wazaari: return "Wazaari";
-        case Point::Yuko: return "Yuko";
-        case Point::Shido: return "Shido";
-        case Point::Hansokumake: return "Hansokumake";
-        default: return "Unknown";
-    }
-}
-
 
 //=========================================================
 Score& Score::Add(Point point)
 //=========================================================
 {
-	++_points[static_cast<int>(point)]; // TODO TOP, heir allgemeiner inkrement für die Enums (Point)
+	++_points[static_cast<int>(point)];
 
 	correct_points();
-
-	std::cout << "Add point: " << PointToString(point)
-				<< " -> value: "
-				<< _points[static_cast<int>(point)]
-				<< std::endl;
-
-	std::cout << "Current Score: "
-				<< "Ippon=" << Value(Point::Ippon) << " "
-				<< "Wazaari=" << Value(Point::Wazaari) << " "
-				<< "Yuko=" << Value(Point::Yuko) << " "
-				<< "Shido=" << Value(Point::Shido)
-				<< std::endl;
 
 	return *this;
 }
@@ -69,12 +39,6 @@ Score& Score::SetValue(Ipponboard::Score::Point point, int value)
 
 		correct_points();
 	}
-
-	 std::cout << "Set point " // TODO TOP, setzten der Punkte
-				<< static_cast<int>(point)
-				<< " to "
-				<< value
-				<< std::endl;
 
 	return *this;
 }

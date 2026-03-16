@@ -39,7 +39,7 @@ public:
 
 	bool HasCategory(QString const& name) const;
 	void AddCategory(FightCategory const& t);
-	void AddCategory(QString const& name); // TODO TOP - Kategorie hinzfügen
+	void AddCategory(QString const& name);
 	void UpdateCategory(FightCategory const& t);
 	void UpdateCategory(QString const& oldName, FightCategory const& t);
 	void RenameCategory(QString const& oldName, QString const& newName);
