@@ -26,7 +26,6 @@
 #include <QInputDialog>
 #include <QMenu>
 #include <QMessageBox>
-#include <QPushButton>
 #include <QSettings>
 #include <QTimer>
 #include <QUrl>
@@ -75,23 +74,6 @@ void MainWindow::Init()
 	on_comboBox_weight_class_currentIndexChanged(m_pUi->comboBox_weight_class->currentText());
 
 	m_pUi->actionAutoAdjustPoints->setChecked(m_pController->IsAutoAdjustPoints());
-
-    // Add manual "Senden" button (above Reset button)
-    // 1. Move Golden Score checkbox to only use column 7 (was 7-8)
-    m_pUi->gridLayout->removeWidget(m_pUi->checkBox_golden_score);
-    m_pUi->gridLayout->addWidget(m_pUi->checkBox_golden_score, 0, 7, 1, 1);
-    
-    // 2. Create and add the Senden button in column 8 (above Reset)
-    QPushButton* button_send = new QPushButton(tr("Senden"), this);
-    button_send->setObjectName("button_send");
-    button_send->setFocusPolicy(Qt::NoFocus);
-    // Make it look important
-    QFont font = button_send->font();
-    font.setBold(true);
-    button_send->setFont(font);
-    
-    m_pUi->gridLayout->addWidget(button_send, 0, 8);
-    connect(button_send, SIGNAL(clicked()), this, SLOT(on_button_send_clicked()));
 }
 
 void MainWindow::on_button_send_clicked()
