@@ -19,6 +19,9 @@ public:
     void UpdateView() override;
     void Reset() override;
     void SetShowInfoHeader(bool show) override;
+    
+    // Manual trigger for API broadcast
+    void ManualDispatch();
 
 signals:
     void dataUpdated(const QJsonObject& json); // Wenn Daten aktualisiert werden, dann wird BroadCast ausgelöst von ApiServer

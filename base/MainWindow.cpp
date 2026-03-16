@@ -11,6 +11,7 @@
 #include "../base/View.h"
 #include "../core/Controller.h"
 #include "../api/ApiServer.h"
+#include "../api/FightDataDispatcher.h"
 
 #include "../core/Fighter.h"
 
@@ -25,6 +26,7 @@
 #include <QInputDialog>
 #include <QMenu>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QSettings>
 #include <QTimer>
 #include <QUrl>
@@ -73,6 +75,31 @@ void MainWindow::Init()
 	on_comboBox_weight_class_currentIndexChanged(m_pUi->comboBox_weight_class->currentText());
 
 	m_pUi->actionAutoAdjustPoints->setChecked(m_pController->IsAutoAdjustPoints());
+
+    // Add manual "Senden" button (above Reset button)
+    // 1. Move Golden Score checkbox to only use column 7 (was 7-8)
+    m_pUi->gridLayout->removeWidget(m_pUi->checkBox_golden_score);
+    m_pUi->gridLayout->addWidget(m_pUi->checkBox_golden_score, 0, 7, 1, 1);
+    
+    // 2. Create and add the Senden button in column 8 (above Reset)
+    QPushButton* button_send = new QPushButton(tr("Senden"), this);
+    button_send->setObjectName("button_send");
+    button_send->setFocusPolicy(Qt::NoFocus);
+    // Make it look important
+    QFont font = button_send->font();
+    font.setBold(true);
+    button_send->setFont(font);
+    
+    m_pUi->gridLayout->addWidget(button_send, 0, 8);
+    connect(button_send, SIGNAL(clicked()), this, SLOT(on_button_send_clicked()));
+}
+
+void MainWindow::on_button_send_clicked()
+{
+    if (m_pDispatcher)
+    {
+        m_pDispatcher->ManualDispatch();
+    }
 }
 
 void MainWindow::on_actionManageCategories_triggered()
@@ -468,17 +495,14 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 	m_pUi->comboBox_name_second->blockSignals(true);
 
 	// 1. Select the Category with "Fuzzy" matching
-	// (e.g. if API sends "F18+" but Ipponboard only has "F")
 	int indexCategory = m_pUi->comboBox_weight_class->findText(category);
 	if (indexCategory == -1)
 	{
-		// Try fuzzy matching: check if any existing category is contained in or starts with the requested string
 		for (int i = 0; i < m_pUi->comboBox_weight_class->count(); ++i)
 		{
 			QString item = m_pUi->comboBox_weight_class->itemText(i);
 			if (item.isEmpty()) continue;
 
-			// Example: "MU18" matches "U18" (substring) or "U18" matches "MU18" (starts with)
 			if (category.contains(item, Qt::CaseInsensitive) || item.contains(category, Qt::CaseInsensitive))
 			{
 				indexCategory = i;
@@ -497,19 +521,16 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 	}
 	else
 	{
-		std::cout << "DEBUG: Category '" << category.toStdString() << "' not found, using as is." << std::endl;
 		m_pUi->comboBox_weight_class->setCurrentText(category);
 	}
 	
-	// Trigger category logic (fills the weight list with weights of the matched category)
+	// Trigger category logic (fills the weight list)
 	on_comboBox_weight_class_currentIndexChanged(finalCategory);
 
-	// 2. Select the Weight (now that the list is populated)
+	// 2. Select the Weight
 	int indexWeight = m_pUi->comboBox_weight->findText(weightClass);
-	
 	if (indexWeight == -1)
 	{
-		// Try to find it with partial match (handle "kg" suffix mismatch)
 		QString simpleWeight = weightClass;
 		simpleWeight.remove("kg", Qt::CaseInsensitive).trimmed();
 
@@ -524,7 +545,6 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 		}
 	}
 
-	// IF STILL NOT FOUND: Add it manually so the dropdown isn't empty!
 	if (indexWeight == -1)
 	{
 		m_pUi->comboBox_weight->addItem(weightClass);
@@ -536,7 +556,7 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 		m_pUi->comboBox_weight->setCurrentIndex(indexWeight);
 	}
 	
-	// Trigger weight logic (updates views and fighter search)
+	// Trigger weight logic
 	on_comboBox_weight_currentIndexChanged(weightClass);
 
 	// 3. Set exact names

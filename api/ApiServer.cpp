@@ -196,11 +196,11 @@ void ApiServer::SendWebhook(const QJsonObject& json)
     // Auto-delete reply when done and log result
     connect(pReply, &QNetworkReply::finished, [pReply]() {
         if (pReply->error() == QNetworkReply::NoError) {
-            std::cout << "DEBUG: Webhook delivered successfully! (HTTP 200/201)" << std::endl << std::flush;
+            std::cout << "DEBUG: Webhook delivered successfully! (HTTP 200/201)" << std::endl;
         } else {
-            std::cout << "DEBUG: Webhook FAILED: " << pReply->errorString().toStdString() 
+            std::cerr << "DEBUG: Webhook FAILED: " << pReply->errorString().toStdString() 
                       << " (Code: " << pReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() << ")" 
-                      << std::endl << std::flush;
+                      << std::endl;
         }
         pReply->deleteLater();
     });

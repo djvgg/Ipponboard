@@ -112,11 +112,11 @@ void MainWindowBase::Init()
 		std::cout << "API Server started" << std::endl;
 
 		// Create and register the dispatcher
-		auto pDispatcher = new Ipponboard::FightDataDispatcher(m_pController.get()); // TODO TOP - Live Daten übertragen
-		m_pController->RegisterView(pDispatcher);
+		m_pDispatcher.reset(new Ipponboard::FightDataDispatcher(m_pController.get())); // TODO TOP - Live Daten übertragen
+		m_pController->RegisterView(m_pDispatcher.get());
 		
 		// Connect dispatcher to server for broadcasting
-		connect(pDispatcher, &Ipponboard::FightDataDispatcher::dataUpdated,
+		connect(m_pDispatcher.get(), &Ipponboard::FightDataDispatcher::dataUpdated,
 				m_pApiServer.get(), &Ipponboard::ApiServer::BroadcastData);
 	}
 	else
