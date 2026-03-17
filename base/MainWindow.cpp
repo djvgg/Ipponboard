@@ -505,7 +505,7 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 	if (indexWeight == -1)
 	{
 		QString simpleWeight = weightClass;
-		simpleWeight.remove("kg", Qt::CaseInsensitive).trimmed();
+		simpleWeight = simpleWeight.remove("kg", Qt::CaseInsensitive).trimmed();
 
 		for (int i = 0; i < m_pUi->comboBox_weight->count(); ++i)
 		{

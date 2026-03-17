@@ -255,7 +255,6 @@ int main(int argc, char* argv[])
 	}
 	else
 	{
-		std::cout << "Einzelmodus gestartet" << std::endl;
 		pMainWnd = std::make_unique<MainWindow>();
 	}
 
