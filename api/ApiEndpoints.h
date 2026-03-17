@@ -1,10 +1,10 @@
 #ifndef API__APIENDPOINTS_H_
 #define API__APIENDPOINTS_H_
 
+#include <QString>
 
 class QTcpSocket;
 class QJsonObject;
-#include <QString>
 
 namespace Ipponboard
 {
@@ -13,7 +13,8 @@ class FighterManager;
 
 class Fighter;
 
-struct PostFightersResult {
+struct PostFightersResult 
+{
     bool success = false;
     QString category;
     QString weightClass;

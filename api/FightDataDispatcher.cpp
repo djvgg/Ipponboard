@@ -21,32 +21,15 @@ FightDataDispatcher::FightDataDispatcher(IController* pController)
 void FightDataDispatcher::UpdateView()
 {
     Controller* pController = dynamic_cast<Controller*>(m_pController);
-    if (!pController) return;
+    
+    if (!pController)
+    {
+        return;
+    } 
 
-    // We still track the state internally, but we don't emit anymore.
-    // This allows us to log "Winner Decided" events without spamming the API.
     int currentFight = pController->GetCurrentFight();
     int currentRound = pController->GetCurrentRound();
-    Fight const& fight = pController->GetFight(currentRound, currentFight);
-    
-    // Use the controller's GetWinner() as the primary source of truth, 
-    // especially for Golden Score and saved fights.
-    FighterEnum winner = pController->GetWinner();
-    auto rules = pController->GetRules();
-
-    // Fallback: Check for Ippon or Hansokumake specifically if not caught above
-    if (winner == FighterEnum::Nobody)
-    {
-        bool s1ippon = fight.GetScore1().Ippon() > 0 || (rules && rules->IsAwaseteIppon(fight.GetScore1()));
-        bool s2ippon = fight.GetScore2().Ippon() > 0 || (rules && rules->IsAwaseteIppon(fight.GetScore2()));
-        bool s1hansoku = fight.GetScore1().Hansokumake();
-        bool s2hansoku = fight.GetScore2().Hansokumake();
-
-        if (s1ippon) winner = FighterEnum::First;
-        else if (s2ippon) winner = FighterEnum::Second;
-        else if (s1hansoku) winner = FighterEnum::Second;
-        else if (s2hansoku) winner = FighterEnum::First;
-    }
+    FighterEnum winner = CalculateWinner();
 
     if (m_lastFightIndex != currentFight || m_lastRoundIndex != currentRound || m_lastWinner != winner)
     {
@@ -65,28 +48,13 @@ void FightDataDispatcher::UpdateView()
 void FightDataDispatcher::ManualDispatch()
 {
     Controller* pController = dynamic_cast<Controller*>(m_pController);
-    if (!pController) return;
-
-    int currentFight = pController->GetCurrentFight();
-    int currentRound = pController->GetCurrentRound();
-    Fight const& fight = pController->GetFight(currentRound, currentFight);
-    
-    // Use the controller's GetWinner() as the primary source of truth
-    FighterEnum winner = pController->GetWinner();
-    auto rules = pController->GetRules();
-
-    if (winner == FighterEnum::Nobody)
+    if (!pController)
     {
-        bool s1ippon = fight.GetScore1().Ippon() > 0 || (rules && rules->IsAwaseteIppon(fight.GetScore1()));
-        bool s2ippon = fight.GetScore2().Ippon() > 0 || (rules && rules->IsAwaseteIppon(fight.GetScore2()));
-        bool s1hansoku = fight.GetScore1().Hansokumake();
-        bool s2hansoku = fight.GetScore2().Hansokumake();
-
-        if (s1ippon) winner = FighterEnum::First;
-        else if (s2ippon) winner = FighterEnum::Second;
-        else if (s1hansoku) winner = FighterEnum::Second;
-        else if (s2hansoku) winner = FighterEnum::First;
+        return;
     }
+
+    FighterEnum winner = CalculateWinner();
+    QString totalTimeStr = CalculateTotalTime();
 
     std::cout << "DEBUG: ManualDispatch triggered. Current Winner: " 
               << (winner == FighterEnum::First ? "fighter1" : (winner == FighterEnum::Second ? "fighter2" : "none")) 
@@ -103,41 +71,91 @@ void FightDataDispatcher::ManualDispatch()
     
     data["fighter1"] = QJsonValue(fighter1);
     data["fighter2"] = QJsonValue(fighter2);
-    // Calculate total elapsed time (including Golden Score)
+    data["time"] = QJsonValue(totalTimeStr);
+    data["winner"] = QJsonValue(winner == FighterEnum::First ? "fighter1" : (winner == FighterEnum::Second ? "fighter2" : ""));
+
+    emit dataUpdated(data);
+}
+
+FighterEnum FightDataDispatcher::CalculateWinner() const
+{
+    Controller* pController = dynamic_cast<Controller*>(m_pController);
+    if (!pController)
+    {
+        return FighterEnum::Nobody;
+    }
+
+    int currentFight = pController->GetCurrentFight();
+    int currentRound = pController->GetCurrentRound();
+    Fight const& fight = pController->GetFight(currentRound, currentFight);
+    
+    FighterEnum winner = pController->GetWinner();
+    auto rules = pController->GetRules();
+
+    if (winner == FighterEnum::Nobody)
+    {
+        bool s1ippon = fight.GetScore1().Ippon() > 0 || (rules && rules->IsAwaseteIppon(fight.GetScore1()));
+        bool s2ippon = fight.GetScore2().Ippon() > 0 || (rules && rules->IsAwaseteIppon(fight.GetScore2()));
+        bool s1hansoku = fight.GetScore1().Hansokumake();
+        bool s2hansoku = fight.GetScore2().Hansokumake();
+
+        if (s1ippon)
+        {
+            winner = FighterEnum::First;
+        }
+        else if (s2ippon)
+        {
+            winner = FighterEnum::Second;
+        }
+        else if (s1hansoku)
+        {
+            winner = FighterEnum::Second;
+        }
+        else if (s2hansoku)
+        {
+            winner = FighterEnum::First;
+        }
+    }
+
+    return winner;
+}
+
+QString FightDataDispatcher::CalculateTotalTime() const
+{
+    Controller* pController = dynamic_cast<Controller*>(m_pController);
+    if (!pController)
+    {
+        return "0:00";
+    }
+
+    int currentFight = pController->GetCurrentFight();
+    int currentRound = pController->GetCurrentRound();
+    Fight const& fight = pController->GetFight(currentRound, currentFight);
+
     QString mainTimeStr = pController->GetTimeText(eTimer_Main);
     QTime mainTime = QTime::fromString(mainTimeStr, "m:ss");
     int mainTimeSecs = mainTime.isValid() ? QTime(0, 0).secsTo(mainTime) : 0;
     
     // Get the base round time from the controller (more reliable than the fight object)
     int baseTimeSecs = pController->GetFightDuration(fight.weight);
-    if (baseTimeSecs <= 0)
+    QTime baseTime = QTime::fromString(pController->GetFightTimeString(), "m:ss");
+    if (baseTimeSecs <= 0 && baseTime.isValid())
     {
-        // Fallback: try to get it from the displayed round time
-        QTime baseTime = QTime::fromString(pController->GetFightTimeString(), "m:ss");
-        if (baseTime.isValid())
-            baseTimeSecs = QTime(0, 0).secsTo(baseTime);
-        else
-            baseTimeSecs = 180; // Last resort: 3 minutes
+        baseTimeSecs = QTime(0, 0).secsTo(baseTime);
     }
     
     int totalSecs = 0;
     if (pController->IsGoldenScore())
     {
-        // In Golden Score, mainTime counts UP from 0:00
         totalSecs = baseTimeSecs + mainTimeSecs;
     }
     else
     {
-        // In regular time, mainTime counts DOWN to 0:00
         totalSecs = baseTimeSecs - mainTimeSecs;
         if (totalSecs < 0) totalSecs = 0; 
     }
     
-    QString totalTimeStr = QString("%1:%2").arg(totalSecs / 60).arg(abs(totalSecs % 60), 2, 10, QChar('0'));
-    data["time"] = QJsonValue(totalTimeStr);
-    data["winner"] = QJsonValue(winner == FighterEnum::First ? "fighter1" : (winner == FighterEnum::Second ? "fighter2" : ""));
-
-    emit dataUpdated(data);
+    return QString("%1:%2").arg(totalSecs / 60).arg(abs(totalSecs % 60), 2, 10, QChar('0'));
 }
 
 void FightDataDispatcher::Reset()

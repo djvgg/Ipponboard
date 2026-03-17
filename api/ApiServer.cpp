@@ -71,66 +71,91 @@ void ApiServer::incomingConnection(qintptr socketDescriptor)
 void ApiServer::handleRequest(QTcpSocket* pSocket)
 {
     m_buffers[pSocket].append(pSocket->readAll());
+    processBuffer(pSocket);
+}
+
+void ApiServer::processBuffer(QTcpSocket* pSocket)
+{
     QByteArray& buffer = m_buffers[pSocket];
+    QString method, path, body;
 
-    // Solange wir vollständige Requests im Puffer haben, diese abarbeiten
-    while (true)
+    while (parseNextHttpRequest(buffer, method, path, body))
     {
-        int headerEnd = buffer.indexOf("\r\n\r\n");
-        if (headerEnd == -1) break; // Header noch nicht vollständig
+        routeRequest(pSocket, method, path, body);
+        if (buffer.isEmpty()) break;
+    }
+}
 
-        QString headers = QString::fromUtf8(buffer.left(headerEnd));
-        
-        // Content-Length finden
-        int contentLength = 0;
-        int clPos = headers.indexOf("Content-Length:", 0, Qt::CaseInsensitive);
-        if (clPos != -1)
+bool ApiServer::parseNextHttpRequest(QByteArray& buffer, QString& method, QString& path, QString& body)
+{
+    int headerEnd = buffer.indexOf("\r\n\r\n");
+    if (headerEnd == -1)
+    {
+        return false; // Header noch nicht vollständig
+    }
+
+    QString headers = QString::fromUtf8(buffer.left(headerEnd));
+    
+    // Content-Length finden
+    int contentLength = 0;
+    int clPos = headers.indexOf("Content-Length:", 0, Qt::CaseInsensitive);
+    if (clPos != -1)
+    {
+        int lineEnd = headers.indexOf("\r\n", clPos);
+        QString clLine = headers.mid(clPos, lineEnd - clPos);
+        contentLength = clLine.section(':', 1).trimmed().toInt();
+    }
+
+    int totalSize = headerEnd + 4 + contentLength;
+    if (buffer.size() < totalSize)
+    {
+        return false; // Body noch nicht vollständig
+    }
+
+    // Wir haben einen kompletten Request!
+    QByteArray fullRequestData = buffer.left(totalSize);
+    buffer.remove(0, totalSize);
+
+    QString request = QString::fromUtf8(fullRequestData);
+    QString startLine = request.section("\r\n", 0, 0);
+    method = startLine.section(' ', 0, 0);
+    path = startLine.section(' ', 1, 1);
+    body = request.mid(headerEnd + 4);
+
+    return true;
+}
+
+void ApiServer::routeRequest(QTcpSocket* pSocket, const QString& method, const QString& path, const QString& body)
+{
+    std::cout << "Request: " << method.toStdString() << " " << path.toStdString() << " (Body: " << body.length() << " bytes)" << std::endl;
+
+    if (method == "POST" && path == "/fighters")
+    {
+        QJsonDocument doc = QJsonDocument::fromJson(body.toUtf8());
+        if (doc.isNull() || !doc.isObject())
         {
-            int lineEnd = headers.indexOf("\r\n", clPos);
-            QString clLine = headers.mid(clPos, lineEnd - clPos);
-            contentLength = clLine.section(':', 1).trimmed().toInt();
-        }
-
-        int totalSize = headerEnd + 4 + contentLength;
-        if (buffer.size() < totalSize) break; // Body noch nicht vollständig
-
-        // Wir haben einen kompletten Request!
-        QByteArray fullRequestData = buffer.left(totalSize);
-        buffer.remove(0, totalSize);
-
-        QString request = QString::fromUtf8(fullRequestData);
-        QString startLine = request.section("\r\n", 0, 0);
-        QString method = startLine.section(' ', 0, 0);
-        QString path = startLine.section(' ', 1, 1);
-        QString body = request.mid(headerEnd + 4);
-
-        std::cout << "Request: " << method.toStdString() << " " << path.toStdString() << " (Body: " << body.length() << " bytes)" << std::endl;
-
-        if (method == "POST" && path == "/fighters")
-        {
-            QJsonDocument doc = QJsonDocument::fromJson(body.toUtf8());
-            if (doc.isNull() || !doc.isObject())
-            {
-                HttpResponse::Send(pSocket, HttpResponse::StatusCode::BadRequest, "Bad Request: Invalid JSON");
-            }
-            else
-            {
-                std::cout << "DEBUG: Received JSON: " << doc.toJson(QJsonDocument::Compact).toStdString() << std::endl;
-                auto result = m_pEndpoints->HandlePostFighters(pSocket, doc.object());
-                if (result.success)
-                {
-                    m_callbackUrl = result.callbackUrl;
-                    std::cout << "DEBUG: Callback URL set to: " << m_callbackUrl.toStdString() << std::endl;
-                    emit fightersAdded(result.category, result.weightClass, result.fighter1Name, result.fighter2Name);
-                }
-            }
+            HttpResponse::Send(pSocket, HttpResponse::StatusCode::BadRequest, "Bad Request: Invalid JSON");
         }
         else
         {
-            HttpResponse::Send(pSocket, HttpResponse::StatusCode::NotFound, "Not Found");
+            std::cout << "DEBUG: Received JSON: " << doc.toJson(QJsonDocument::Compact).toStdString() << std::endl;
+            auto result = m_pEndpoints->HandlePostFighters(pSocket, doc.object());
+            if (result.success)
+            {
+                // We ignore the callback from JSON and use the sender's IP instead
+                QString senderIp = pSocket->peerAddress().toString();
+                if (senderIp.startsWith("::ffff:")) senderIp.remove("::ffff:");
+                
+                m_callbackUrl = QString("http://%1:5001/api/ippon-score").arg(senderIp);
+                
+                std::cout << "DEBUG: Callback URL set automatically to: " << m_callbackUrl.toStdString() << " (Ignored JSON content)" << std::endl;
+                emit fightersAdded(result.category, result.weightClass, result.fighter1Name, result.fighter2Name);
+            }
         }
-
-        if (buffer.isEmpty()) break;
+    }
+    else
+    {
+        HttpResponse::Send(pSocket, HttpResponse::StatusCode::NotFound, "Not Found");
     }
 }
 

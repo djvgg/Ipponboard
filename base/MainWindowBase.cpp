@@ -17,6 +17,7 @@
 #include "../util/path_helpers.h"
 #include "../api/ApiServer.h"
 #include "../api/FightDataDispatcher.h"
+#include <iostream>
 
 #include <QApplication>
 #include <QDesktopWidget>
@@ -103,6 +104,11 @@ void MainWindowBase::Init()
 	m_pController->RegisterView(static_cast<IView*>(this));
 	m_pController->RegisterView(static_cast<IGoldenScoreView*>(this));
 
+	setup_api();
+}
+
+void MainWindowBase::setup_api()
+{
 	// Start API server
 	m_pApiServer.reset(new Ipponboard::ApiServer(m_pController.get(), &m_fighterManager, this));
 	if (m_pApiServer->StartListening(PORT))

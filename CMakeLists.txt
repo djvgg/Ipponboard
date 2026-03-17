@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.28)
 
 project(Ipponboard-Main VERSION 2.2.0 LANGUAGES CXX)
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 # Define variables for the required MSVC runtime libraries
 if(MSVC)
     include(InstallRequiredSystemLibraries)

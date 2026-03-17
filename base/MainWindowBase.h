@@ -122,6 +122,7 @@ protected:
 	void read_settings();
 	void load_fighters();
 	void save_fighters();
+	void setup_api();
 	virtual void update_views();
     virtual void update_screen_visibility(QWidget* pView) const;
 	virtual void update_statebar();

@@ -40,6 +40,9 @@ protected:
 
 private:
     void handleRequest(QTcpSocket* pSocket);
+    void processBuffer(QTcpSocket* pSocket);
+    bool parseNextHttpRequest(QByteArray& buffer, QString& method, QString& path, QString& body);
+    void routeRequest(QTcpSocket* pSocket, const QString& method, const QString& path, const QString& body);
     void SendWebhook(const QJsonObject& json);
 
     Controller* m_pController;

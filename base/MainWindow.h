@@ -49,6 +49,9 @@ private:
 	/* specific private methods */
 	void update_fighter_name_completer(const QString& weight);
 	void update_fighters(const QString& s);
+	void SelectCategory(const QString& category);
+	void SelectWeight(const QString& weightClass);
+	void SetFighters(const QString& f1Name, const QString& f2Name);
 
 	/* base class slot overrides */
 	virtual void on_actionManageFighters_triggered() override;

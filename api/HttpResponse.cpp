@@ -27,11 +27,17 @@ QString HttpResponse::GetStatusText(StatusCode code)
 {
     switch (code)
     {
-        case StatusCode::OK:                  return "OK";
-        case StatusCode::Created:             return "Created";
-        case StatusCode::BadRequest:          return "Bad Request";
-        case StatusCode::NotFound:            return "Not Found";
-        case StatusCode::InternalServerError: return "Internal Server Error";
-        default:                              return "Unknown";
+        case StatusCode::OK: 
+            return "OK";
+        case StatusCode::Created: 
+            return "Created";
+        case StatusCode::BadRequest: 
+            return "Bad Request";
+        case StatusCode::NotFound: 
+            return "Not Found";
+        case StatusCode::InternalServerError: 
+            return "Internal Server Error";
+        default: 
+            return "Unknown";
     }
 }

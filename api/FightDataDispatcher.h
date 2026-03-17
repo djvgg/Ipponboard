@@ -3,13 +3,14 @@
 
 #include "../core/iView.h"
 #include <QObject>
+#include <QString>
 #include <QJsonObject>
 
 namespace Ipponboard
 {
 class IController;
 
-class FightDataDispatcher : public QObject, public IView // IView wird immer aufgerufen wenn sich was im Kampf ändert
+class FightDataDispatcher : public QObject, public IView
 {
     Q_OBJECT
 public:
@@ -24,9 +25,12 @@ public:
     void ManualDispatch();
 
 signals:
-    void dataUpdated(const QJsonObject& json); // Wenn Daten aktualisiert werden, dann wird BroadCast ausgelöst von ApiServer
+    void dataUpdated(const QJsonObject& json);
 
 private:
+    QString CalculateTotalTime() const;
+    Ipponboard::FighterEnum CalculateWinner() const;
+
     IController* m_pController;
     int m_lastFightIndex = -1;
     int m_lastRoundIndex = -1;

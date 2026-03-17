@@ -475,15 +475,8 @@ void MainWindow::UpdateGoldenScoreView()
 	m_pUi->checkBox_golden_score->setChecked(m_pController->IsGoldenScore());
 }
 
-void MainWindow::onFightReceived(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name)
+void MainWindow::SelectCategory(const QString& category)
 {
-	// Block signals to prevent flickering/recursion while we set multiple values
-	m_pUi->comboBox_weight_class->blockSignals(true);
-	m_pUi->comboBox_weight->blockSignals(true);
-	m_pUi->comboBox_name_first->blockSignals(true);
-	m_pUi->comboBox_name_second->blockSignals(true);
-
-	// 1. Select the Category
 	int indexCategory = m_pUi->comboBox_weight_class->findText(category, Qt::MatchExactly);
 
 	QString finalCategory = category;
@@ -496,11 +489,13 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 	{
 		m_pUi->comboBox_weight_class->setCurrentText(category);
 	}
-	
+
 	// Trigger category logic (fills the weight list)
 	on_comboBox_weight_class_currentIndexChanged(finalCategory);
+}
 
-	// 2. Select the Weight
+void MainWindow::SelectWeight(const QString& weightClass)
+{
 	int indexWeight = m_pUi->comboBox_weight->findText(weightClass, Qt::MatchExactly);
 	if (indexWeight == -1)
 	{
@@ -510,8 +505,8 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 		for (int i = 0; i < m_pUi->comboBox_weight->count(); ++i)
 		{
 			QString itemText = m_pUi->comboBox_weight->itemText(i);
-			if (itemText.startsWith(simpleWeight, Qt::CaseInsensitive) || 
-                itemText.contains(simpleWeight, Qt::CaseInsensitive))
+			if (itemText.startsWith(simpleWeight, Qt::CaseInsensitive) ||
+				itemText.contains(simpleWeight, Qt::CaseInsensitive))
 			{
 				indexWeight = i;
 				break;
@@ -528,17 +523,32 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 		m_pUi->comboBox_weight->addItem(weightClass);
 		m_pUi->comboBox_weight->setCurrentText(weightClass);
 	}
-	
+
 	// Trigger weight logic
 	on_comboBox_weight_currentIndexChanged(weightClass);
+}
 
-	// 3. Set exact names
+void MainWindow::SetFighters(const QString& fighter1Name, const QString& fighter2Name)
+{
 	m_pUi->comboBox_name_first->setCurrentText(fighter1Name);
 	m_pUi->comboBox_name_second->setCurrentText(fighter2Name);
 
 	// Trigger fighter update logic
 	on_comboBox_name_first_activated(fighter1Name);
 	on_comboBox_name_second_activated(fighter2Name);
+}
+
+void MainWindow::onFightReceived(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name)
+{
+	// Block signals to prevent flickering/recursion while we set multiple values
+	m_pUi->comboBox_weight_class->blockSignals(true);
+	m_pUi->comboBox_weight->blockSignals(true);
+	m_pUi->comboBox_name_first->blockSignals(true);
+	m_pUi->comboBox_name_second->blockSignals(true);
+
+	SelectCategory(category);
+	SelectWeight(weightClass);
+	SetFighters(fighter1Name, fighter2Name);
 
 	// Unblock signals
 	m_pUi->comboBox_weight_class->blockSignals(false);
