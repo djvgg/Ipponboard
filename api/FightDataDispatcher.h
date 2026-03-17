@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QString>
 #include <QJsonObject>
+#include <QTime>
 
 namespace Ipponboard
 {
@@ -16,7 +17,6 @@ class FightDataDispatcher : public QObject, public IView
 public:
     explicit FightDataDispatcher(IController* pController);
 
-    // IView interface
     void UpdateView() override;
     void Reset() override;
     void SetShowInfoHeader(bool show) override;

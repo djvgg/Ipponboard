@@ -8,7 +8,7 @@
 #include <QJsonDocument>
 #include <QJsonValue>
 #include <QTime>
-#include <iostream>
+#include <QDebug>
 
 
 using namespace Ipponboard;
@@ -39,8 +39,8 @@ void FightDataDispatcher::UpdateView()
         
         if (winner != FighterEnum::Nobody)
         {
-            std::cout << "DEBUG: Dispatcher - Winner detected (waiting for manual SEND): " 
-                      << (winner == FighterEnum::First ? "fighter1" : "fighter2") << std::endl;
+            qDebug() << "Dispatcher - Winner detected (waiting for manual SEND):" 
+                      << (winner == FighterEnum::First ? "fighter1" : "fighter2");
         }
     }
 }
@@ -56,9 +56,8 @@ void FightDataDispatcher::ManualDispatch()
     FighterEnum winner = CalculateWinner();
     QString totalTimeStr = CalculateTotalTime();
 
-    std::cout << "DEBUG: ManualDispatch triggered. Current Winner: " 
-              << (winner == FighterEnum::First ? "fighter1" : (winner == FighterEnum::Second ? "fighter2" : "none")) 
-              << std::endl;
+    qDebug() << "ManualDispatch triggered. Current Winner:" 
+              << (winner == FighterEnum::First ? "fighter1" : (winner == FighterEnum::Second ? "fighter2" : "none"));
 
     QJsonObject data;
     
@@ -89,35 +88,59 @@ FighterEnum FightDataDispatcher::CalculateWinner() const
     int currentRound = pController->GetCurrentRound();
     Fight const& fight = pController->GetFight(currentRound, currentFight);
     
-    FighterEnum winner = pController->GetWinner();
-    auto rules = pController->GetRules();
-
-    if (winner == FighterEnum::Nobody)
+    // Explicitly use the rules for decision making as requested
+    auto pRules = m_pController->GetRules();
+    if (!pRules)
     {
-        bool s1ippon = fight.GetScore1().Ippon() > 0 || (rules && rules->IsAwaseteIppon(fight.GetScore1()));
-        bool s2ippon = fight.GetScore2().Ippon() > 0 || (rules && rules->IsAwaseteIppon(fight.GetScore2()));
-        bool s1hansoku = fight.GetScore1().Hansokumake();
-        bool s2hansoku = fight.GetScore2().Hansokumake();
-
-        if (s1ippon)
-        {
-            winner = FighterEnum::First;
-        }
-        else if (s2ippon)
-        {
-            winner = FighterEnum::Second;
-        }
-        else if (s1hansoku)
-        {
-            winner = FighterEnum::Second;
-        }
-        else if (s2hansoku)
-        {
-            winner = FighterEnum::First;
-        }
+        return FighterEnum::Nobody;
     }
 
-    return winner;
+    // A winner is only detected if it's a "real" win (Ippon/Hansokumake)
+    // or if the time is up (or lead in Golden Score).
+    
+    // m_pController->GetScore(..., Point::Ippon) already includes rule-based Awasete-Ippon.
+    bool s1ippon = m_pController->GetScore(FighterEnum::First, Score::Point::Ippon) > 0;
+    bool s2ippon = m_pController->GetScore(FighterEnum::Second, Score::Point::Ippon) > 0;
+    bool s1hansoku = m_pController->GetScore(FighterEnum::First, Score::Point::Hansokumake) > 0;
+    bool s2hansoku = m_pController->GetScore(FighterEnum::Second, Score::Point::Hansokumake) > 0;
+
+    if (s1ippon || s2hansoku)
+    {
+        qDebug() << "Dispatcher - Winner:" << (s1ippon ? "Ippon (F1)" : "Hansokumake (F2)");
+        return FighterEnum::First;
+    }
+    
+    if (s2ippon || s1hansoku)
+    {
+        qDebug() << "Dispatcher - Winner:" << (s2ippon ? "Ippon (F2)" : "Hansokumake (F1)");
+        return FighterEnum::Second;
+    }
+
+    // Live-Timer Check
+    int remainingSecs = m_pController->GetSecondsRemaining();
+
+    // Golden Score: The first point (Wazaari/Yuko) wins the fight immediately.
+    if (fight.IsGoldenScore())
+    {
+        if (pRules->CompareScore(fight) != 0)
+        {
+            FighterEnum winner = m_pController->GetWinner();
+            qDebug() << "Dispatcher - Winner: Golden Score Lead (" << (winner == FighterEnum::First ? "F1" : "F2") << ")";
+            return winner;
+        }
+    }
+    // Normal fight: Only if time is up (0:00), we check who is leading according to the rules.
+    else if (remainingSecs <= 0)
+    {
+        FighterEnum winner = m_pController->GetWinner();
+        if (winner != FighterEnum::Nobody)
+        {
+            qDebug() << "Dispatcher - Winner: Time elapsed with lead (" << (winner == FighterEnum::First ? "F1" : "F2") << ")";
+        }
+        return winner;
+    }
+
+    return FighterEnum::Nobody;
 }
 
 QString FightDataDispatcher::CalculateTotalTime() const

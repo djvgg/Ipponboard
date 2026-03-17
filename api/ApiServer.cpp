@@ -6,7 +6,7 @@
 #include <QJsonObject>
 #include <QNetworkReply>
 #include <QUrl>
-#include <iostream>
+#include <QDebug>
 
 using namespace Ipponboard;
 
@@ -45,7 +45,7 @@ void ApiServer::incomingConnection(qintptr socketDescriptor)
     QTcpSocket* pSocket = new QTcpSocket(this);
     if (pSocket->setSocketDescriptor(socketDescriptor))
     {
-        // Sobald die Leitung zu ist -> Objekt automatisch löschen
+
         connect(pSocket, &QTcpSocket::disconnected, this, [this, pSocket]()
         {
             m_clients.removeAll(pSocket);
@@ -54,9 +54,9 @@ void ApiServer::incomingConnection(qintptr socketDescriptor)
         });
 
         m_clients.append(pSocket);
-        std::cout << "New client connected: " << pSocket->peerAddress().toString().toStdString() << " (Total: " << m_clients.size() << ")" << std::endl;
+        qInfo() << "New client connected:" << pSocket->peerAddress().toString() << "(Total:" << m_clients.size() << ")";
 
-        // Warten bis der Client seine Daten geschickt hat
+
         connect(pSocket, &QTcpSocket::readyRead, this, [this, pSocket]()
         {
             handleRequest(pSocket);
@@ -127,7 +127,7 @@ bool ApiServer::parseNextHttpRequest(QByteArray& buffer, QString& method, QStrin
 
 void ApiServer::routeRequest(QTcpSocket* pSocket, const QString& method, const QString& path, const QString& body)
 {
-    std::cout << "Request: " << method.toStdString() << " " << path.toStdString() << " (Body: " << body.length() << " bytes)" << std::endl;
+    qInfo() << "Request:" << method << path << "(Body:" << body.length() << "bytes)";
 
     if (method == "POST" && path == "/fighters")
     {
@@ -138,7 +138,7 @@ void ApiServer::routeRequest(QTcpSocket* pSocket, const QString& method, const Q
         }
         else
         {
-            std::cout << "DEBUG: Received JSON: " << doc.toJson(QJsonDocument::Compact).toStdString() << std::endl;
+            qDebug() << "Received JSON:" << doc.toJson(QJsonDocument::Compact);
             auto result = m_pEndpoints->HandlePostFighters(pSocket, doc.object());
             if (result.success)
             {
@@ -148,7 +148,7 @@ void ApiServer::routeRequest(QTcpSocket* pSocket, const QString& method, const Q
                 
                 m_callbackUrl = QString("http://%1:5001/api/ippon-score").arg(senderIp);
                 
-                std::cout << "DEBUG: Callback URL set automatically to: " << m_callbackUrl.toStdString() << " (Ignored JSON content)" << std::endl;
+                qInfo() << "Callback URL set automatically to:" << m_callbackUrl << "(Ignored JSON content)";
                 emit fightersAdded(result.category, result.weightClass, result.fighter1Name, result.fighter2Name);
             }
         }
@@ -163,7 +163,7 @@ void ApiServer::BroadcastData(const QJsonObject& json)
 {
     QJsonDocument doc(json);
     QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
-    std::cout << "DEBUG: Broadcasting JSON: " << jsonData.toStdString() << std::endl;
+    qDebug() << "Broadcasting JSON:" << jsonData;
 
     // Always send webhook if configured
     SendWebhook(json);
@@ -182,7 +182,7 @@ void ApiServer::BroadcastData(const QJsonObject& json)
             QString ip = pClient->peerAddress().toString();
             if (ip.startsWith("::ffff:")) ip.remove("::ffff:");
             
-            std::cout << "DEBUG: Sending to client " << ip.toStdString() << std::endl;
+            qDebug() << "Sending to client" << ip;
             pClient->write(jsonData);
         }
     }
@@ -214,18 +214,18 @@ void ApiServer::SendWebhook(const QJsonObject& json)
     QJsonDocument doc(json);
     QByteArray data = doc.toJson(QJsonDocument::Compact);
 
-    std::cout << "DEBUG: Sending Webhook to " << url.toString().toStdString() << std::endl;
+    qInfo() << "Sending Webhook to" << url.toString();
     
     QNetworkReply* pReply = m_networkManager.post(request, data);
     
     // Auto-delete reply when done and log result
     connect(pReply, &QNetworkReply::finished, [pReply]() {
+        int statusCode = pReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         if (pReply->error() == QNetworkReply::NoError) {
-            std::cout << "DEBUG: Webhook delivered successfully! (HTTP 200/201)" << std::endl;
+            qInfo() << "Webhook delivered successfully! Status:" << statusCode;
         } else {
-            std::cerr << "DEBUG: Webhook FAILED: " << pReply->errorString().toStdString() 
-                      << " (Code: " << pReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() << ")" 
-                      << std::endl;
+            qCritical() << "Webhook FAILED:" << pReply->errorString() 
+                       << "(Status:" << statusCode << ")";
         }
         pReply->deleteLater();
     });

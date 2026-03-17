@@ -470,6 +470,11 @@ QString Controller::GetTimeText(ETimer timer) const
 	return ret;
 }
 
+int Controller::GetSecondsRemaining() const
+{
+	return QTime(0, 0, 0, 0).secsTo(*m_pTimeMain);
+}
+
 //=========================================================
 QString Controller::GetFighterName(FighterEnum who) const
 //=========================================================

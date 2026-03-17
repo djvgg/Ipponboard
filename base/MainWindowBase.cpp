@@ -17,7 +17,7 @@
 #include "../util/path_helpers.h"
 #include "../api/ApiServer.h"
 #include "../api/FightDataDispatcher.h"
-#include <iostream>
+
 
 #include <QApplication>
 #include <QDesktopWidget>
@@ -113,9 +113,6 @@ void MainWindowBase::setup_api()
 	m_pApiServer.reset(new Ipponboard::ApiServer(m_pController.get(), &m_fighterManager, this));
 	if (m_pApiServer->StartListening(PORT))
 	{
-		qInfo() << "API Server started on port" << PORT;
-		std::cout << "API Server started" << std::endl;
-
 		// Create and register the dispatcher
 		m_pDispatcher.reset(new Ipponboard::FightDataDispatcher(m_pController.get()));
 		m_pController->RegisterView(m_pDispatcher.get());
@@ -123,6 +120,8 @@ void MainWindowBase::setup_api()
 		// Connect dispatcher to server for broadcasting
 		connect(m_pDispatcher.get(), &Ipponboard::FightDataDispatcher::dataUpdated,
 				m_pApiServer.get(), &Ipponboard::ApiServer::BroadcastData);
+
+		qInfo() << "API Server started successfully on port" << PORT;
 	}
 	else
 	{

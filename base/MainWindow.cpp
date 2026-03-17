@@ -29,6 +29,7 @@
 #include <QSettings>
 #include <QTimer>
 #include <QUrl>
+#include <QDebug>
 
 namespace StrTags
 {
@@ -205,7 +206,7 @@ void MainWindow::on_comboBox_weight_class_currentIndexChanged(const QString& s)
 	}
 	else
 	{
-		std::cout << "DEBUG: Category " << s.toStdString() << " has 0s round time, keeping previous setting." << std::endl;
+		qDebug() << "Category" << s << "has 0s round time, keeping previous setting.";
 	}
 	m_pController->DoAction(Ipponboard::eAction_ResetAll);
 
