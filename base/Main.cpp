@@ -146,7 +146,7 @@ void CustomMessageHandler(QtMsgType type, const QMessageLogContext& context, con
 int main(int argc, char* argv[])
 {
 	QApplication a(argc, argv);
-
+	
     // Open the log file and truncate existing content
     QFile logFile(QCoreApplication::applicationName() + ".log");
     if (logFile.open(QIODevice::WriteOnly | QIODevice::Truncate))

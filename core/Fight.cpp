@@ -1,4 +1,4 @@
-﻿// Copyright 2018 Florian Muecke. All rights reserved.
+// Copyright 2018 Florian Muecke. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.txt file.
 
@@ -117,11 +117,14 @@ QString Fight::GetTimeRemainingString() const
 
 bool Fight::HasWon(FighterEnum who) const
 {
-	//unused: const FighterEnum other = GetUkeFromTori(who);
+	if (who == FighterEnum::Nobody || !rules)
+	{
+		return false;
+	}
 
 	auto result = rules->CompareScore(*this);
-
-	if (who == FighterEnum::First && result < 0 || who == FighterEnum::Second && result > 0)
+	
+	if ((who == FighterEnum::First && result < 0) || (who == FighterEnum::Second && result > 0))
 	{
 		return true;
 	}

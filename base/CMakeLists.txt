@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.28)
 # CMake configuration for Ipponboard main application
 set(APP_NAME Ipponboard)
 
-find_package(Qt5 5.15.2 COMPONENTS Widgets XmlPatterns PrintSupport Multimedia REQUIRED)	
+find_package(Qt5 5.15.2 COMPONENTS Widgets XmlPatterns Network PrintSupport Multimedia REQUIRED)	
 
 if(LINUX)
     # common include directories
@@ -12,6 +12,7 @@ if(LINUX)
     include_directories(${Qt5Widgets_INCLUDE_DIRS})
     include_directories(${Qt5PrintSupport_INCLUDE_DIRS})
     include_directories(${Qt5XmlPatterns_INCLUDE_DIRS})
+    include_directories(${Qt5Network_INCLUDE_DIRS})
     include_directories(${Qt5Multimedia_INCLUDE_DIRS})
    
     add_compile_options(-fPIC -fpermissive)
@@ -115,6 +116,14 @@ set(SOURCES
     ../core/TournamentMode.cpp
     ../core/TournamentModel.cpp
     ../core/Rules.cpp
+    ../api/ApiServer.h
+    ../api/ApiServer.cpp
+    ../api/HttpResponse.h
+    ../api/HttpResponse.cpp
+    ../api/ApiEndpoints.h
+    ../api/ApiEndpoints.cpp
+    ../api/FightDataDispatcher.h
+    ../api/FightDataDispatcher.cpp
 )
 
 set(FORMS
@@ -162,6 +171,7 @@ target_include_directories(${APP_NAME} PRIVATE ${BOOST_DIR})
 
 # Copy data files
 add_custom_command(TARGET ${APP_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ROOT_DIR}/categories.config" "$<TARGET_FILE_DIR:${APP_NAME}>"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/TournamentModes.ini" "$<TARGET_FILE_DIR:${APP_NAME}>"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/clubs.config" "$<TARGET_FILE_DIR:${APP_NAME}>"
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/clubs" "$<TARGET_FILE_DIR:${APP_NAME}>/clubs"
@@ -189,7 +199,7 @@ if(MSVC)
     )
 
     # Copy Qt5 runtime dlls
-    target_link_libraries(${APP_NAME} PRIVATE Qt5::Widgets Qt5::XmlPatterns Qt5::PrintSupport Qt5::Multimedia)
+    target_link_libraries(${APP_NAME} PRIVATE Qt5::Widgets Qt5::XmlPatterns Qt5::Network Qt5::PrintSupport Qt5::Multimedia)
     add_custom_command(TARGET ${APP_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${QTDIR}/bin/$<IF:$<CONFIG:Release>,Qt5Core.dll,Qt5Cored.dll> "$<TARGET_FILE_DIR:${APP_NAME}>"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${QTDIR}/bin/$<IF:$<CONFIG:Release>,Qt5Gui.dll,Qt5Guid.dll> "$<TARGET_FILE_DIR:${APP_NAME}>"
@@ -215,5 +225,5 @@ else()
         COMMAND ${QTDIR}/bin/lrelease -compress -silent ${ROOT_DIR}/i18n/nl.ts -qm $<TARGET_FILE_DIR:${APP_NAME}>/lang/nl.qm
     )
     
-    target_link_libraries(${APP_NAME} PRIVATE Qt5::Widgets Qt5::XmlPatterns Qt5::PrintSupport Qt5::Multimedia)
+    target_link_libraries(${APP_NAME} PRIVATE Qt5::Widgets Qt5::XmlPatterns Qt5::Network Qt5::PrintSupport Qt5::Multimedia)
 endif()

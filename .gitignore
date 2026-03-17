@@ -52,3 +52,6 @@ lib/*
 qrc_*.cpp
 setup/Output/
 ui*.h
+.cache/
+compile_commands.json
+.clangd

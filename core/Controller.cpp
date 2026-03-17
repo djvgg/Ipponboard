@@ -1,4 +1,4 @@
-﻿// Copyright 2018 Florian Muecke. All rights reserved.
+// Copyright 2018 Florian Muecke. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.txt file.
 
@@ -375,6 +375,23 @@ FighterEnum Controller::GetLead() const
 }
 
 //=========================================================
+FighterEnum Controller::GetWinner() const
+//=========================================================
+{
+	if (current_fight().HasWon(FighterEnum::First))
+	{
+		return FighterEnum::First;
+	}
+
+	if (current_fight().HasWon(FighterEnum::Second))
+	{
+		return FighterEnum::Second;
+	}
+
+	return FighterEnum::Nobody;
+}
+
+//=========================================================
 Ipponboard::FighterEnum Controller::GetLastHolder() const
 //=========================================================
 {
@@ -451,6 +468,11 @@ QString Controller::GetTimeText(ETimer timer) const
 	}
 
 	return ret;
+}
+
+int Controller::GetSecondsRemaining() const
+{
+	return QTime(0, 0, 0, 0).secsTo(*m_pTimeMain);
 }
 
 //=========================================================

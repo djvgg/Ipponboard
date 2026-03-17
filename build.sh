@@ -239,4 +239,12 @@ function switch_config {
 
 # Main
 check_cmake
+
+if [ "$1" == "--ci" ]; then
+    init_environment
+    export CONFIG="release"
+    clean_build_with_archive
+    exit $?
+fi
+
 main_loop

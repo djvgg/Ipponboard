@@ -10,6 +10,8 @@
 #include "../base/FighterManagerDlg.h"
 #include "../base/View.h"
 #include "../core/Controller.h"
+#include "../api/ApiServer.h"
+#include "../api/FightDataDispatcher.h"
 
 #include "../core/Fighter.h"
 
@@ -27,6 +29,7 @@
 #include <QSettings>
 #include <QTimer>
 #include <QUrl>
+#include <QDebug>
 
 namespace StrTags
 {
@@ -54,6 +57,12 @@ void MainWindow::Init()
 
 	MainWindowBase::Init();
 
+	if (m_pApiServer)
+	{
+		connect(m_pApiServer.get(), &Ipponboard::ApiServer::fightersAdded,
+				this, &MainWindow::onFightReceived);
+	}
+
 	// init tournament classes (if there are none present)
 	for (int i(0); i < m_pCategoryManager->CategoryCount(); ++i)
 	{
@@ -68,10 +77,18 @@ void MainWindow::Init()
 	m_pUi->actionAutoAdjustPoints->setChecked(m_pController->IsAutoAdjustPoints());
 }
 
+void MainWindow::on_button_send_clicked()
+{
+    if (m_pDispatcher)
+    {
+        m_pDispatcher->ManualDispatch();
+    }
+}
+
 void MainWindow::on_actionManageCategories_triggered()
 {
 	//save categories before editing
-	m_pCategoryManager->SaveCategories();
+	m_pCategoryManager->SaveCategories(); 
 
 	FightCategoryManagerDlg dlg(m_pCategoryManager, this);
 
@@ -127,18 +144,20 @@ void MainWindow::on_comboBox_weight_currentIndexChanged(const QString& s)
 	m_pSecondaryView->UpdateView();
 }
 
-void MainWindow::on_comboBox_name_first_currentIndexChanged(const QString& s)
+void MainWindow::on_comboBox_name_first_activated(const QString& s)
 {
 	update_fighters(s);
-
 	m_pController->SetFighterName(FighterEnum::First, s);
+	m_pPrimaryView->UpdateView();
+	m_pSecondaryView->UpdateView();
 }
 
-void MainWindow::on_comboBox_name_second_currentIndexChanged(const QString& s)
+void MainWindow::on_comboBox_name_second_activated(const QString& s)
 {
 	update_fighters(s);
-
 	m_pController->SetFighterName(FighterEnum::Second, s);
+	m_pPrimaryView->UpdateView();
+	m_pSecondaryView->UpdateView();
 }
 
 void MainWindow::on_checkBox_golden_score_clicked(bool checked)
@@ -180,7 +199,15 @@ void MainWindow::on_comboBox_weight_class_currentIndexChanged(const QString& s)
 	// trigger round time update
 	on_checkBox_golden_score_clicked(m_pUi->checkBox_golden_score->checkState());
 
-	m_pController->OverrideRoundTimeOfFightMode(category.GetRoundTime());
+	// SAFEGUARD: Don't override if category lookup resulted in 0 seconds
+	if (category.GetRoundTime() > 0)
+	{
+		m_pController->OverrideRoundTimeOfFightMode(category.GetRoundTime());
+	}
+	else
+	{
+		qDebug() << "Category" << s << "has 0s round time, keeping previous setting.";
+	}
 	m_pController->DoAction(Ipponboard::eAction_ResetAll);
 
 	m_pPrimaryView->SetCategory(s);
@@ -191,12 +218,20 @@ void MainWindow::on_comboBox_weight_class_currentIndexChanged(const QString& s)
 
 void MainWindow::update_fighter_name_completer(const QString& weight)
 {
-	// filter fighters for suitable
+	// Filterung der Kämpfer nach Gewicht UND Kategorie
 	m_CurrentFighterNames.clear();
+	const QString category = m_pUi->comboBox_weight_class->currentText();
+
+	// Momentane Auswahl speichern ("retten")
+	QString currentFirst = m_pUi->comboBox_name_first->currentText();
+	QString currentSecond = m_pUi->comboBox_name_second->currentText();
 
 	for (const Ipponboard::Fighter & f : m_fighterManager.m_fighters)
 	{
-		if (f.weight == weight || f.weight.isEmpty())
+		bool categoryMatch = f.category == category || f.category.isEmpty();
+		bool weightMatch = f.weight == weight || f.weight.isEmpty();
+
+		if (categoryMatch && weightMatch)
 		{
 			const QString fullName =
 				QString("%1 %2").arg(f.first_name, f.last_name);
@@ -206,11 +241,17 @@ void MainWindow::update_fighter_name_completer(const QString& weight)
 	}
 
 	m_CurrentFighterNames.sort();
-
+	m_pUi->comboBox_name_first->blockSignals(true);
 	m_pUi->comboBox_name_first->clear();
 	m_pUi->comboBox_name_first->addItems(m_CurrentFighterNames);
+	m_pUi->comboBox_name_first->setCurrentText(currentFirst);
+	m_pUi->comboBox_name_first->blockSignals(false);
+
+	m_pUi->comboBox_name_second->blockSignals(true);
 	m_pUi->comboBox_name_second->clear();
 	m_pUi->comboBox_name_second->addItems(m_CurrentFighterNames);
+	m_pUi->comboBox_name_second->setCurrentText(currentSecond);
+	m_pUi->comboBox_name_second->blockSignals(false);
 }
 
 void MainWindow::update_fighters(const QString& s)
@@ -221,12 +262,18 @@ void MainWindow::update_fighters(const QString& s)
 	QString firstName = s;
 	QString lastName;
 
-	int pos = s.indexOf(' ');
+	// Wir suchen das LETZTE Leerzeichen für die Trennung
+	int pos = s.lastIndexOf(' ');
 
-	if (pos < s.size())
+	if (pos != -1)
 	{
-		firstName = s.left(pos);
-		lastName = s.mid(pos + 1);
+		firstName = s.left(pos).trimmed();
+		lastName = s.mid(pos + 1).trimmed();
+	}
+	else
+	{
+		firstName = "";
+		lastName = s.trimmed();
 	}
 
 	const QString weight = m_pUi->comboBox_weight->currentText();
@@ -427,4 +474,86 @@ void MainWindow::UpdateGoldenScoreView()
 {
 	m_pUi->checkBox_golden_score->setEnabled(m_pController->GetRules()->IsOption_OpenEndGoldenScore());
 	m_pUi->checkBox_golden_score->setChecked(m_pController->IsGoldenScore());
+}
+
+void MainWindow::SelectCategory(const QString& category)
+{
+	int indexCategory = m_pUi->comboBox_weight_class->findText(category, Qt::MatchExactly);
+
+	QString finalCategory = category;
+	if (indexCategory != -1)
+	{
+		m_pUi->comboBox_weight_class->setCurrentIndex(indexCategory);
+		finalCategory = m_pUi->comboBox_weight_class->itemText(indexCategory);
+	}
+	else
+	{
+		m_pUi->comboBox_weight_class->setCurrentText(category);
+	}
+
+	// Trigger category logic (fills the weight list)
+	on_comboBox_weight_class_currentIndexChanged(finalCategory);
+}
+
+void MainWindow::SelectWeight(const QString& weightClass)
+{
+	int indexWeight = m_pUi->comboBox_weight->findText(weightClass, Qt::MatchExactly);
+	if (indexWeight == -1)
+	{
+		QString simpleWeight = weightClass;
+		simpleWeight = simpleWeight.remove("kg", Qt::CaseInsensitive).trimmed();
+
+		for (int i = 0; i < m_pUi->comboBox_weight->count(); ++i)
+		{
+			QString itemText = m_pUi->comboBox_weight->itemText(i);
+			if (itemText.startsWith(simpleWeight, Qt::CaseInsensitive) ||
+				itemText.contains(simpleWeight, Qt::CaseInsensitive))
+			{
+				indexWeight = i;
+				break;
+			}
+		}
+	}
+
+	if (indexWeight != -1)
+	{
+		m_pUi->comboBox_weight->setCurrentIndex(indexWeight);
+	}
+	else
+	{
+		m_pUi->comboBox_weight->addItem(weightClass);
+		m_pUi->comboBox_weight->setCurrentText(weightClass);
+	}
+
+	// Trigger weight logic
+	on_comboBox_weight_currentIndexChanged(weightClass);
+}
+
+void MainWindow::SetFighters(const QString& fighter1Name, const QString& fighter2Name)
+{
+	m_pUi->comboBox_name_first->setCurrentText(fighter1Name);
+	m_pUi->comboBox_name_second->setCurrentText(fighter2Name);
+
+	// Trigger fighter update logic
+	on_comboBox_name_first_activated(fighter1Name);
+	on_comboBox_name_second_activated(fighter2Name);
+}
+
+void MainWindow::onFightReceived(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name)
+{
+	// Block signals to prevent flickering/recursion while we set multiple values
+	m_pUi->comboBox_weight_class->blockSignals(true);
+	m_pUi->comboBox_weight->blockSignals(true);
+	m_pUi->comboBox_name_first->blockSignals(true);
+	m_pUi->comboBox_name_second->blockSignals(true);
+
+	SelectCategory(category);
+	SelectWeight(weightClass);
+	SetFighters(fighter1Name, fighter2Name);
+
+	// Unblock signals
+	m_pUi->comboBox_weight_class->blockSignals(false);
+	m_pUi->comboBox_weight->blockSignals(false);
+	m_pUi->comboBox_name_first->blockSignals(false);
+	m_pUi->comboBox_name_second->blockSignals(false);
 }

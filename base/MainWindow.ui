@@ -327,7 +327,7 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="7" colspan="2">
+      <item row="0" column="7">
        <widget class="QCheckBox" name="checkBox_golden_score">
         <property name="focusPolicy">
          <enum>Qt::NoFocus</enum>
@@ -340,6 +340,25 @@
         </property>
         <property name="text">
          <string>Golden Score</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="8">
+       <widget class="QPushButton" name="button_send">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="toolTip">
+         <string>Kampfdaten an die Webseite senden</string>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
+        <property name="text">
+         <string>Senden</string>
         </property>
        </widget>
       </item>

@@ -1,4 +1,4 @@
-﻿// Copyright 2018 Florian Muecke. All rights reserved.
+// Copyright 2018 Florian Muecke. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.txt file.
 
@@ -61,7 +61,9 @@ public:
 	void DoAction(Ipponboard::EAction action, Ipponboard::FighterEnum who = Ipponboard::FighterEnum::First, bool doRevoke = false);
 	Ipponboard::EState GetCurrentState() const { return m_State; }
 	Ipponboard::FighterEnum GetLead() const;
+	Ipponboard::FighterEnum GetWinner() const override;
 	Ipponboard::FighterEnum GetLastHolder() const;
+	int GetSecondsRemaining() const override;
 	QString GetTimeText(Ipponboard::ETimer timer) const;
 	QString GetFighterName(Ipponboard::FighterEnum who) const;
 	QString GetFighterLastName(Ipponboard::FighterEnum) const;
@@ -127,16 +129,16 @@ public:
 	void PrevFight();
 	void SetCurrentFight(unsigned int index);
 
-	int GetCurrentFight() const
-	{
-		return m_currentFight;
-	}
-
 	void SetCurrentRound(unsigned int index);
 
 	int GetCurrentRound() const
 	{
 		return m_currentRound;
+	}
+
+	int GetCurrentFight() const
+	{
+		return m_currentFight;
 	}
 
 	void ClearFightsAndResetTimers();

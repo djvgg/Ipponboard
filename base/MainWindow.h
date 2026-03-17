@@ -49,6 +49,9 @@ private:
 	/* specific private methods */
 	void update_fighter_name_completer(const QString& weight);
 	void update_fighters(const QString& s);
+	void SelectCategory(const QString& category);
+	void SelectWeight(const QString& weightClass);
+	void SetFighters(const QString& f1Name, const QString& f2Name);
 
 	/* base class slot overrides */
 	virtual void on_actionManageFighters_triggered() override;
@@ -59,12 +62,14 @@ protected slots:
 	/* specific private slots */
 	void on_actionManageCategories_triggered();
 	void on_comboBox_weight_currentIndexChanged(const QString&);
-	void on_comboBox_name_second_currentIndexChanged(const QString&);
-	void on_comboBox_name_first_currentIndexChanged(const QString&);
+	void on_comboBox_name_second_activated(const QString&);
+	void on_comboBox_name_first_activated(const QString&);
 	void on_checkBox_golden_score_clicked(bool checked);
 	void on_comboBox_weight_class_currentIndexChanged(const QString&);
 
 private slots:
+	void on_button_send_clicked();
+	void onFightReceived(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name);
 	void on_actionAutoAdjustPoints_toggled(bool checked) override;
 	void on_actionViewInfoBar_toggled(bool checked);
 	void on_toolButton_viewSecondaryScreen_toggled();

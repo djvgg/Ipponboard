@@ -27,7 +27,9 @@ public:
 	virtual void DoAction(Ipponboard::EAction action, Ipponboard::FighterEnum who = Ipponboard::FighterEnum::First, bool doRevoke = false) = 0;
 	virtual Ipponboard::EState GetCurrentState() const	= 0;
 	virtual Ipponboard::FighterEnum GetLead() const = 0;
+	virtual Ipponboard::FighterEnum GetWinner() const = 0;
 	virtual Ipponboard::FighterEnum GetLastHolder() const = 0;
+	virtual int GetSecondsRemaining() const = 0;
 	virtual QString GetTimeText(Ipponboard::ETimer timer) const = 0;
 	virtual QString GetFighterName(Ipponboard::FighterEnum) const = 0;
 	virtual QString GetFighterLastName(Ipponboard::FighterEnum) const = 0;

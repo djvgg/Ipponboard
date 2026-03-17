@@ -1,0 +1,38 @@
+image: ubuntu:24.04
+
+variables:
+  # Verhindert interaktive Abfragen während der Installation
+  DEBIAN_FRONTEND: noninteractive
+
+stages:
+  - build
+
+build_and_test:
+  stage: build
+  before_script:
+    - apt-get update && apt-get install -y 
+      build-essential 
+      cmake 
+      qtbase5-dev 
+      qtmultimedia5-dev 
+      libqt5xmlpatterns5-dev 
+      libboost-all-dev 
+      p7zip-full 
+      pandoc
+      qttools5-dev-tools
+    
+    # Temporäre Konfiguration für den CI-Build erstellen
+    - echo 'set "LINUX_QTDIR=/usr"' > env_cfg.bat
+    - echo 'set "LINUX_BOOST_DIR=/usr"' >> env_cfg.bat
+    # build.sh ausführbar machen
+    - chmod +x build.sh
+
+  script:
+    # Den neuen CI-Modus nutzen (entspricht deiner Option 9)
+    - ./build.sh --ci
+
+  artifacts:
+    name: "Ipponboard-Build-$CI_COMMIT_REF_NAME"
+    paths:
+      - _output/*.7z
+    expire_in: 1 week

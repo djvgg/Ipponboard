@@ -1,4 +1,4 @@
-﻿// Copyright 2018 Florian Muecke. All rights reserved.
+// Copyright 2018 Florian Muecke. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.txt file.
 
@@ -30,6 +30,8 @@ class Controller;
 class ClubManager;
 class FightCategoryMgr;
 class ScoreScreen;
+class ApiServer;
+class FightDataDispatcher;
 }
 class QSettings;
 
@@ -120,6 +122,7 @@ protected:
 	void read_settings();
 	void load_fighters();
 	void save_fighters();
+	void setup_api();
 	virtual void update_views();
     virtual void update_screen_visibility(QWidget* pView) const;
 	virtual void update_statebar();
@@ -180,6 +183,8 @@ protected:
 	int m_secondScreenNo;
 	QSize m_secondScreenSize;
 	Ipponboard::ControllerConfig m_controllerCfg;
+	std::unique_ptr<Ipponboard::ApiServer> m_pApiServer;
+    std::shared_ptr<Ipponboard::FightDataDispatcher> m_pDispatcher;
 
 private:
 #ifdef _WIN32
