@@ -22,10 +22,15 @@ VER3=2
 TAG=""
 # that's it. <--
 
-REV=$(git log -1 --format=%h)
-echo "$REV" > "$BASE_DIR/.revision"
+if command -v git &> /dev/null && git rev-parse --is-inside-work-tree &> /dev/null; then
+  REV=$(git log -1 --format=%h)
+  REV_DATE=$(git log -1 --format=%ci)
+else
+  REV="unknown"
+  REV_DATE=$(date +"%Y-%m-%d %H:%M:%S %z")
+fi
 
-REV_DATE=$(git log -1 --format=%ci)
+echo "$REV" > "$BASE_DIR/.revision"
 echo "$REV_DATE" > "$BASE_DIR/.date"
 
 FILENAME_NO_EXT="$BASE_DIR/versioninfo"
