@@ -52,6 +52,8 @@ MainWindowBase::MainWindowBase(QWidget* parent)
 #ifdef _WIN32
     , m_pGamepad(new Gamepad)
 #endif
+	, m_ipponboardPort(DEFAULT_IPPONBOARD_PORT)
+	, m_websitePort(DEFAULT_WEBSITE_PORT)
 {
 }
 
@@ -111,7 +113,8 @@ void MainWindowBase::setup_api()
 {
 	// Start API server
 	m_pApiServer.reset(new Ipponboard::ApiServer(m_pController.get(), &m_fighterManager, this));
-	if (m_pApiServer->StartListening(PORT))
+	m_pApiServer->SetWebsitePort(m_websitePort);
+	if (m_pApiServer->StartListening(m_ipponboardPort))
 	{
 		// Create and register the dispatcher
 		m_pDispatcher.reset(new Ipponboard::FightDataDispatcher(m_pController.get()));
@@ -121,11 +124,11 @@ void MainWindowBase::setup_api()
 		connect(m_pDispatcher.get(), &Ipponboard::FightDataDispatcher::dataUpdated,
 				m_pApiServer.get(), &Ipponboard::ApiServer::BroadcastData);
 
-		qInfo() << "API Server started successfully on port" << PORT;
+		qInfo() << "API Server started successfully on port" << m_ipponboardPort << "with WebsitePort" << m_websitePort;
 	}
 	else
 	{
-		qCritical() << "Failed to start API Server on port" << PORT;
+		qCritical() << "Failed to start API Server on port" << m_ipponboardPort;
 	}
 }
 
@@ -528,6 +531,8 @@ void MainWindowBase::write_settings()
 	{
 		settings.remove("");
 		settings.setValue(str_tag_autoAdjustPoints, m_pController->IsAutoAdjustPoints());
+		settings.setValue(str_tag_IpponboardPort, m_ipponboardPort);
+		settings.setValue(str_tag_WebsitePort, m_websitePort);
 	}
 	settings.endGroup();
 }
@@ -690,6 +695,8 @@ void MainWindowBase::read_settings()
 	{
 		const auto isAutoAdjust = settings.value(str_tag_autoAdjustPoints, true).toBool();
 		m_pController->SetAutoAdjustPoints(isAutoAdjust);
+		m_ipponboardPort = settings.value(str_tag_IpponboardPort, DEFAULT_IPPONBOARD_PORT).toInt();
+		m_websitePort = settings.value(str_tag_WebsitePort, DEFAULT_WEBSITE_PORT).toInt();
 	}
 	settings.endGroup();
 
