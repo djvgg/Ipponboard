@@ -44,9 +44,9 @@ windows_build:
     - windows
   before_script:
     # Hier ggf. die Pfade an deinen Windows-Runner anpassen!
-    - echo "set `"IPPONBOARD_ROOT_DIR=%CD%`"" > env_cfg.bat
-    - echo "set `"QTDIR=C:\Qt\5.15.13\msvc2022`"" >> env_cfg.bat
-    - echo "set `"BOOST_DIR=C:\local\boost_1_81_0`"" >> env_cfg.bat
+    - echo "set `"IPPONBOARD_ROOT_DIR=%CI_PROJECT_DIR%`"" > env_cfg.bat
+    - echo "set `"QTDIR=C:\Qt\5.15.2\msvc2019`"" >> env_cfg.bat
+    - echo "set `"BOOST_DIR=C:\local\boost_1_90_0\boost_1_90_0`"" >> env_cfg.bat
     - echo "set `"INNO_DIR=C:\Program Files (x86)\Inno Setup 6`"" >> env_cfg.bat
   script:
     - powershell -ExecutionPolicy Bypass -File build.ps1 --ci
