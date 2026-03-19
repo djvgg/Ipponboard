@@ -1,13 +1,13 @@
-image: ubuntu:24.04
-
 variables:
-  # Verhindert interaktive Abfragen während der Installation
+  # Verhindert interaktive Abfragen während der Installation (Linux)
   DEBIAN_FRONTEND: noninteractive
 
 stages:
   - build
 
-build_and_test:
+# Linux Build
+linux_build:
+  image: ubuntu:24.04
   stage: build
   before_script:
     - apt-get update && apt-get install -y 
@@ -24,15 +24,35 @@ build_and_test:
     # Temporäre Konfiguration für den CI-Build erstellen
     - echo 'set "LINUX_QTDIR=/usr"' > env_cfg.bat
     - echo 'set "LINUX_BOOST_DIR=/usr"' >> env_cfg.bat
-    # build.sh ausführbar machen
     - chmod +x build.sh
 
   script:
-    # Den neuen CI-Modus nutzen (entspricht deiner Option 9)
     - ./build.sh --ci
 
   artifacts:
-    name: "Ipponboard-Build-$CI_COMMIT_REF_NAME"
+    name: "Ipponboard-Linux-$CI_COMMIT_REF_NAME"
     paths:
       - _output/*.7z
     expire_in: 1 week
+    when: always
+
+# Windows Build
+# Benötigt einen GitLab-Runner mit dem Tag 'windows'
+windows_build:
+  stage: build
+  tags:
+    - windows
+  before_script:
+    # Hier ggf. die Pfade an deinen Windows-Runner anpassen!
+    - echo "set `"IPPONBOARD_ROOT_DIR=%CD%`"" > env_cfg.bat
+    - echo "set `"QTDIR=C:\Qt\5.15.13\msvc2022`"" >> env_cfg.bat
+    - echo "set `"BOOST_DIR=C:\local\boost_1_81_0`"" >> env_cfg.bat
+    - echo "set `"INNO_DIR=C:\Program Files (x86)\Inno Setup 6`"" >> env_cfg.bat
+  script:
+    - powershell -ExecutionPolicy Bypass -File build.ps1 --ci
+  artifacts:
+    name: "Ipponboard-Windows-$CI_COMMIT_REF_NAME"
+    paths:
+      - _output/*.7z
+    expire_in: 1 week
+    when: always
