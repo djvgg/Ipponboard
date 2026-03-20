@@ -6,6 +6,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <memory>
+#include <cstdint>
 
 class QTcpSocket;
 class QJsonObject;
@@ -17,7 +18,8 @@ class ApiEndpoints;
 class FighterManager;
 class FightDataDispatcher;
 
-constexpr uint16_t PORT = 8080;
+constexpr std::uint16_t DEFAULT_IPPONBOARD_PORT = 8080;
+constexpr std::uint16_t DEFAULT_WEBSITE_PORT = 5001;
 
 class ApiServer : public QTcpServer
 {
@@ -27,7 +29,11 @@ public:
     explicit ApiServer(Controller* pController, FighterManager* pFighterManager, QObject* parent = nullptr);
     ~ApiServer();
 
-    bool StartListening(uint16_t port);
+    void SetWebsitePort(std::uint16_t port)
+    {
+        m_websitePort = port;
+    }
+    bool StartListening(std::uint16_t port = DEFAULT_IPPONBOARD_PORT);
     void StopListening();
 
     void BroadcastData(const QJsonObject& json);
@@ -52,6 +58,7 @@ private:
     QMap<QTcpSocket*, QByteArray> m_buffers;
     QString m_callbackUrl;
     QNetworkAccessManager m_networkManager;
+    std::uint16_t m_websitePort = DEFAULT_WEBSITE_PORT;
 };
 
 }

@@ -11,6 +11,7 @@
 #include "FighterManager.h"
 #include "../core/ControllerConfig.h"
 #include "../util/helpers.hpp"
+#include <cstdint>
 
 #include <QMainWindow>
 #include <vector>
@@ -89,6 +90,8 @@ static const char* const str_tag_Options = "Options";
 static const char* const str_tag_sound_time_ends = "TimeEnds";
 static const char* const str_tag_rules = "Rules";
 static const char* const str_tag_autoAdjustPoints = "AutoAdjustPoints";
+static const char* const str_tag_IpponboardPort = "IpponboardPort";
+static const char* const str_tag_WebsitePort = "WebsitePort";
 
 class MainWindowBase : public QMainWindow, public Ipponboard::IView, public Ipponboard::IGoldenScoreView
 {
@@ -185,6 +188,8 @@ protected:
 	Ipponboard::ControllerConfig m_controllerCfg;
 	std::unique_ptr<Ipponboard::ApiServer> m_pApiServer;
     std::shared_ptr<Ipponboard::FightDataDispatcher> m_pDispatcher;
+	std::uint16_t m_ipponboardPort;
+	std::uint16_t m_websitePort;
 
 private:
 #ifdef _WIN32

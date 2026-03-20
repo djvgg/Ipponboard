@@ -7,6 +7,7 @@
 #include <QNetworkReply>
 #include <QUrl>
 #include <QDebug>
+#include <cstdint>
 
 using namespace Ipponboard;
 
@@ -23,7 +24,7 @@ ApiServer::~ApiServer()
     StopListening();
 }
 
-bool ApiServer::StartListening(uint16_t port)
+bool ApiServer::StartListening(std::uint16_t port)
 {
     if (!listen(QHostAddress::Any, port))
     {
@@ -146,9 +147,9 @@ void ApiServer::routeRequest(QTcpSocket* pSocket, const QString& method, const Q
                 QString senderIp = pSocket->peerAddress().toString();
                 if (senderIp.startsWith("::ffff:")) senderIp.remove("::ffff:");
                 
-                m_callbackUrl = QString("http://%1:5001/api/ippon-score").arg(senderIp);
+                m_callbackUrl = QString("http://%1:%2/api/ippon-score").arg(senderIp).arg(m_websitePort);
                 
-                qInfo() << "Callback URL set automatically to:" << m_callbackUrl << "(Ignored JSON content)";
+                qInfo() << "Callback URL set automatically to:" << m_callbackUrl << "(Using WebsitePort:" << m_websitePort << ")";
                 emit fightersAdded(result.category, result.weightClass, result.fighter1Name, result.fighter2Name);
             }
         }

@@ -209,7 +209,21 @@ function Translate-Resources {
 # Main
 try {
     Check-cmake
-    MainLoop
+    if ($args.Count -gt 0 -and $args[0] -eq "--ci") {
+        Write-Host "CI mode detected. Running build..."
+        Init-Environment
+        $global:CONFIG = "release"
+        $success = CleanBuildWithSetup
+        if ($success) {
+            Write-Host "Build successful."
+            exit 0
+        } else {
+            Write-Host "Build failed."
+            exit 1
+        }
+    } else {
+        MainLoop
+    }
 } catch {
     Write-Host "An error occurred: $_"
     exit 1
