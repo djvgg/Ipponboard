@@ -6,7 +6,7 @@ set(APP_NAME Ipponboard)
 
 find_package(Qt5 5.15.2 COMPONENTS Widgets XmlPatterns Network PrintSupport Multimedia REQUIRED)	
 
-if(LINUX)
+if(LINUX OR APPLE)
     # common include directories
     include_directories(${ROOT_DIR}/Widgets)
     include_directories(${Qt5Widgets_INCLUDE_DIRS})
@@ -14,7 +14,7 @@ if(LINUX)
     include_directories(${Qt5XmlPatterns_INCLUDE_DIRS})
     include_directories(${Qt5Network_INCLUDE_DIRS})
     include_directories(${Qt5Multimedia_INCLUDE_DIRS})
-   
+
     add_compile_options(-fPIC -fpermissive)
 endif()
 
@@ -167,7 +167,7 @@ else()
 endif()
 
 #target_precompile_headers(${APP_NAME} PRIVATE pch.h)
-target_include_directories(${APP_NAME} PRIVATE ${BOOST_DIR})
+target_include_directories(${APP_NAME} PRIVATE ${BOOST_DIR} ${BOOST_DIR}/include)
 
 # Copy data files
 add_custom_command(TARGET ${APP_NAME} POST_BUILD
