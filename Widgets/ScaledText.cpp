@@ -19,8 +19,73 @@ ScaledText::ScaledText(QWidget* pParent)
 	, m_textSize(eSize_normal)
 	, m_isVisible(true)
     , m_isRotated(false)
+    , m_autoFit(false)
+    , m_baseFont()
 {
+	m_baseFont = font();
 	SetText("ScaledText");
+}
+
+void ScaledText::SetAutoFit(bool enabled)
+{
+	m_autoFit = enabled;
+	if (m_autoFit)
+	{
+		m_baseFont = font();
+		apply_auto_fit();
+	}
+	Redraw();
+}
+
+void ScaledText::resizeEvent(QResizeEvent* event)
+{
+	QWidget::resizeEvent(event);
+	if (m_autoFit)
+	{
+		apply_auto_fit();
+		Redraw();
+	}
+}
+
+void ScaledText::apply_auto_fit()
+{
+	if (width() <= 0 || height() <= 0)
+		return;
+
+	const int wMax = std::max(8, width() - 4);
+	const int hMax = std::max(8, height() - 4);
+	const int minPx = 6;
+	int lo = minPx;
+	int hi = hMax;
+	int best = minPx;
+	QFont candidate = m_baseFont;
+	while (lo <= hi)
+	{
+		int mid = (lo + hi) / 2;
+		candidate.setPixelSize(mid);
+		QFontMetrics fm(candidate);
+		const int tw = m_Text.isEmpty() ? 0 : fm.horizontalAdvance(m_Text);
+		const int th = fm.height();
+		if (tw <= wMax && th <= hMax)
+		{
+			best = mid;
+			lo = mid + 1;
+		}
+		else
+		{
+			hi = mid - 1;
+		}
+	}
+	QFont fitted = m_baseFont;
+	fitted.setPixelSize(best);
+	QWidget::setFont(fitted);
+	delete m_pLayout;
+	m_pLayout = new QTextLayout(m_Text, fitted);
+	m_pLayout->setTextOption(QTextOption(m_Alignment));
+	m_pLayout->setCacheEnabled(true);
+	m_pLayout->beginLayout();
+	m_pLayout->createLine();
+	m_pLayout->endLayout();
 }
 
 void ScaledText::SetText(const QString& text,
@@ -36,15 +101,22 @@ void ScaledText::SetText(const QString& text,
 
     m_isRotated = rotate;
 
-	update_text_metrics();
+	if (m_autoFit)
+		apply_auto_fit();
+	else
+		update_text_metrics();
 
 	Redraw();
 }
 
 void ScaledText::SetFont(const QFont& font)
 {
+	m_baseFont = font;
 	this->setFont(font);
-	update_text_metrics();
+	if (m_autoFit)
+		apply_auto_fit();
+	else
+		update_text_metrics();
 
 	Redraw();
 }
@@ -125,6 +197,40 @@ void ScaledText::paintEvent(QPaintEvent* event)
 
 	// erase background
 	painter.fillRect(event->rect(), QBrush(m_BGColor));
+
+	if (m_isVisible && m_Text.contains(QChar('\n')))
+	{
+		painter.setRenderHint(QPainter::TextAntialiasing);
+		painter.setPen(m_TextColor);
+
+		const QStringList lines = m_Text.split('\n');
+		QFontMetrics fm(this->font());
+		const int lineH = fm.height();
+		const int totalH = lineH * lines.size();
+		int maxW = 1;
+		for (const QString& s : lines)
+			maxW = std::max(maxW, fm.horizontalAdvance(s));
+
+		const qreal zoom = std::min(
+			qreal(std::max(1, width() - 4)) / qreal(maxW),
+			qreal(std::max(1, height() - 4)) / qreal(totalH));
+
+		painter.translate(width() / 2.0, height() / 2.0);
+		painter.scale(zoom, zoom);
+		qreal y = -totalH / 2.0;
+		Qt::Alignment hAlign = Qt::AlignHCenter;
+		if (m_Alignment == Qt::AlignLeft) hAlign = Qt::AlignLeft;
+		else if (m_Alignment == Qt::AlignRight) hAlign = Qt::AlignRight;
+		for (const QString& s : lines)
+		{
+			painter.drawText(QRectF(-maxW / 2.0, y, maxW, lineH), hAlign | Qt::AlignVCenter, s);
+			y += lineH;
+		}
+
+		painter.restore();
+		painter.end();
+		return;
+	}
 
 	if (m_isVisible)
 	{
@@ -233,7 +339,15 @@ void ScaledText::update_text_metrics()
 	m_pLayout->setTextOption(QTextOption(m_Alignment));
 	m_pLayout->setCacheEnabled(true);
 	m_pLayout->beginLayout();
-	m_pLayout->createLine();
+	qreal y = 0;
+	QTextLine line = m_pLayout->createLine();
+	while (line.isValid())
+	{
+		line.setLineWidth(10000);
+		line.setPosition(QPointF(0, y));
+		y += line.height();
+		line = m_pLayout->createLine();
+	}
 	m_pLayout->endLayout();
 
 	Redraw();

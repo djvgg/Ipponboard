@@ -1042,15 +1042,15 @@ void MainWindowBase::update_fighter_name_font(const QFont& font)
 
 void MainWindowBase::on_button_reset_clicked()
 {
-//	QMessageBox::StandardButton answer =
-//		QMessageBox::question( this,
-//							   tr("Reset"),
-//							   tr("Really reset current fight?"),
-//							   QMessageBox::No | QMessageBox::Yes );
-//	if( QMessageBox::Yes == answer )
-	m_pController->DoAction(eAction_ResetAll,
-                        FighterEnum::Nobody,
-							false);
+	auto answer = QMessageBox::question(this,
+			tr("Reset"),
+			tr("Reset alles? Scores, Timer, Kategorie, Gewicht und Kämpfer werden gelöscht."),
+			QMessageBox::No | QMessageBox::Yes,
+			QMessageBox::No);
+	if (answer != QMessageBox::Yes) return;
+
+	m_pController->DoAction(eAction_ResetAll, FighterEnum::Nobody, false);
+	clear_fighter_metadata();
 }
 
 void MainWindowBase::on_action_Info_Header_triggered(bool val)

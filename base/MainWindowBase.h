@@ -138,6 +138,7 @@ protected:
 	virtual void ui_check_language_items() = 0;
 	virtual void ui_check_rules_items() = 0;
 	virtual void ui_check_show_secondary_view(bool checked) const = 0;
+	virtual void clear_fighter_metadata() {}
 
 private:
 	virtual void write_specific_settings(QSettings& settings);
@@ -153,7 +154,7 @@ protected slots:
 	void on_actionShow_SecondaryView_triggered();
 	//void on_actionReset_Scores_triggered();
 	void on_actionPreferences_triggered();
-	void on_button_reset_clicked();
+	virtual void on_button_reset_clicked();
 	void EvaluateInput();
 	void on_actionLang_English_triggered(bool);
 	void on_actionLang_Deutsch_triggered(bool);

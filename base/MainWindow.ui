@@ -399,6 +399,31 @@
         </property>
        </widget>
       </item>
+      <item row="1" column="9">
+       <widget class="QPushButton" name="button_reload">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
+        <property name="toolTip">
+         <string>Aktuellen Kampf neu starten (Kämpfer bleiben)</string>
+        </property>
+        <property name="text">
+         <string>🔄 Neustart</string>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="5">
        <widget class="QComboBox" name="comboBox_name_second">
         <property name="sizePolicy">

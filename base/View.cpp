@@ -25,7 +25,7 @@ View::View(IController* pController, EditionType edition, EType type, QWidget* p
 	, m_pController(pController)
 	, ui(new Ui::ScoreViewHorizontal)
 	, m_InfoHeaderFont("Calibri", 12, QFont::Bold, false)
-	, m_FighterNameFont("Calibri", 12, QFont::Bold, true)
+	, m_FighterNameFont("Calibri", 12, QFont::Bold, false)
 	, m_DigitFont("Calibri", 12, QFont::Bold, false)
 	, m_TextColorFirst(Qt::black)
 	, m_TextBgColorFirst(Qt::white)
@@ -236,18 +236,19 @@ void View::UpdateView()
 	//
 	// fighter names
 	//
-	ui->text_lastname_first->SetText(
-		m_pController->GetFighterLastName(GVF_(FighterEnum::First)),
-		ScaledText::eSize_uppercase);
-	ui->text_lastname_second->SetText(
-		m_pController->GetFighterLastName(GVF_(FighterEnum::Second)),
-		ScaledText::eSize_uppercase);
-	ui->text_firstname_first->SetText(
-		m_pController->GetFighterFirstName(GVF_(FighterEnum::First)),
-		ScaledText::eSize_uppercase);
-	ui->text_firstname_second->SetText(
-		m_pController->GetFighterFirstName(GVF_(FighterEnum::Second)),
-		ScaledText::eSize_uppercase);
+	auto combinedName = [this](FighterEnum who) {
+		const QString last = m_pController->GetFighterLastName(GVF_(who)).toUpper().trimmed();
+		const QString first = m_pController->GetFighterFirstName(GVF_(who)).toUpper().trimmed();
+		if (last.isEmpty() && first.isEmpty()) return QString();
+		if (first.isEmpty()) return last;
+		if (last.isEmpty()) return first;
+		return last + "\n" + first;
+	};
+
+	ui->text_lastname_first->SetText(combinedName(FighterEnum::First), ScaledText::eSize_normal);
+	ui->text_lastname_second->SetText(combinedName(FighterEnum::Second), ScaledText::eSize_normal);
+	ui->text_firstname_first->setVisible(false);
+	ui->text_firstname_second->setVisible(false);
 
 	// first score
 	update_ippon(FighterEnum::First);

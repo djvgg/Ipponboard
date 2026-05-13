@@ -58,13 +58,17 @@ public:
 		m_Alignment = flag;
 	}
 
+	void SetAutoFit(bool enabled);
+
 protected:
     void paintEvent(QPaintEvent* event) override;
     void timerEvent(QTimerEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
 private:
 	void set_size(ETextSize size);
 	void update_text_metrics();
+	void apply_auto_fit();
 
 	QString m_Text;
 	QColor m_TextColor;
@@ -76,6 +80,8 @@ private:
 	ETextSize m_textSize;
 	bool m_isVisible;
     bool m_isRotated;
+	bool m_autoFit;
+	QFont m_baseFont;
 };
 
 

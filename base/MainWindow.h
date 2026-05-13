@@ -69,10 +69,14 @@ protected slots:
 
 private slots:
 	void on_button_send_clicked();
+	void on_button_reload_clicked();
 	void onFightReceived(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name);
 	void on_actionAutoAdjustPoints_toggled(bool checked) override;
 	void on_actionViewInfoBar_toggled(bool checked);
 	void on_toolButton_viewSecondaryScreen_toggled();
+
+protected:
+	void clear_fighter_metadata() override;
 
 private:
 	/* member */

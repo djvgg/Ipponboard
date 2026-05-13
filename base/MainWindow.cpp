@@ -85,6 +85,33 @@ void MainWindow::on_button_send_clicked()
     }
 }
 
+void MainWindow::on_button_reload_clicked()
+{
+    m_pController->DoAction(Ipponboard::eAction_ResetAll, Ipponboard::FighterEnum::Nobody, false);
+}
+
+void MainWindow::clear_fighter_metadata()
+{
+    const QSignalBlocker b1(m_pUi->comboBox_name_first);
+    const QSignalBlocker b2(m_pUi->comboBox_name_second);
+    const QSignalBlocker b3(m_pUi->comboBox_weight_class);
+    const QSignalBlocker b4(m_pUi->comboBox_weight);
+    m_pUi->comboBox_name_first->setCurrentIndex(-1);
+    m_pUi->comboBox_name_first->setCurrentText("");
+    m_pUi->comboBox_name_second->setCurrentIndex(-1);
+    m_pUi->comboBox_name_second->setCurrentText("");
+    m_pUi->comboBox_weight_class->setCurrentIndex(-1);
+    m_pUi->comboBox_weight_class->setCurrentText("");
+    m_pUi->comboBox_weight->setCurrentIndex(-1);
+    m_pUi->comboBox_weight->setCurrentText("");
+
+    m_pController->SetFighterName(Ipponboard::FighterEnum::First, QString());
+    m_pController->SetFighterName(Ipponboard::FighterEnum::Second, QString());
+    m_pController->SetWeightClass(QString());
+    m_pPrimaryView->UpdateView();
+    m_pSecondaryView->UpdateView();
+}
+
 void MainWindow::on_actionManageCategories_triggered()
 {
 	//save categories before editing
