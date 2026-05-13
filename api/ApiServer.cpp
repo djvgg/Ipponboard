@@ -146,9 +146,11 @@ void ApiServer::routeRequest(QTcpSocket* pSocket, const QString& method, const Q
                 // We ignore the callback from JSON and use the sender's IP instead
                 QString senderIp = pSocket->peerAddress().toString();
                 if (senderIp.startsWith("::ffff:")) senderIp.remove("::ffff:");
-                
-                m_callbackUrl = QString("http://%1:%2/api/ippon-score").arg(senderIp).arg(m_websitePort);
-                
+
+                // Bracket IPv6 host so the URL parses correctly (e.g. http://[::1]:5001/...)
+                QString hostForUrl = senderIp.contains(':') ? QString("[%1]").arg(senderIp) : senderIp;
+                m_callbackUrl = QString("http://%1:%2/api/ippon-score").arg(hostForUrl).arg(m_websitePort);
+
                 qInfo() << "Callback URL set automatically to:" << m_callbackUrl << "(Using WebsitePort:" << m_websitePort << ")";
                 emit fightersAdded(result.category, result.weightClass, result.fighter1Name, result.fighter2Name);
             }
