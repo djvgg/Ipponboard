@@ -58,6 +58,7 @@ public:
 	void RegisterView(IView* pView);
 	void RegisterView(IGoldenScoreView* pView);
 	int GetScore(Ipponboard::FighterEnum whos, Ipponboard::Score::Point point) const;
+	int GetDisplayScore(Ipponboard::FighterEnum who) const override;
 	void DoAction(Ipponboard::EAction action, Ipponboard::FighterEnum who = Ipponboard::FighterEnum::First, bool doRevoke = false);
 	Ipponboard::EState GetCurrentState() const { return m_State; }
 	Ipponboard::FighterEnum GetLead() const;

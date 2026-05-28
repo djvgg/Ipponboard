@@ -591,6 +591,8 @@
      <addaction name="actionRules2017U15"/>
      <addaction name="actionRules2013"/>
      <addaction name="actionRulesClassic"/>
+     <addaction name="separator"/>
+     <addaction name="actionRulesPfalz"/>
     </widget>
     <addaction name="separator"/>
     <addaction name="actionAutoAdjustPoints"/>
@@ -963,6 +965,17 @@
    </property>
    <property name="toolTip">
     <string>Use IJF 2025 rules</string>
+   </property>
+  </action>
+  <action name="actionRulesPfalz">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>JVP U11/U13 (20 Punkte)</string>
+   </property>
+   <property name="toolTip">
+    <string>Pfälzisches Additionssystem bis 20 Punkte (WKO § 3.5)</string>
    </property>
   </action>
   <action name="actionRules2018">

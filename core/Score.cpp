@@ -55,11 +55,20 @@ void Score::Clear()
 
 void Score::correct_point(Score::Point p)
 {
+	// Caps are rule-driven where a ruleset asks for it; without a ruleset the
+	// historic IJF caps apply (Ippon<=1, Shido<=4). Only the JVP additive
+	// system raises these (GetMaxIpponCount/GetMaxShidoCount == INT32_MAX), so
+	// every existing ruleset keeps its previous behaviour.
+	const int maxIppon = _pRules ? _pRules->GetMaxIpponCount() : 1;
+	int maxShido = 4;
+	if (_pRules && _pRules->GetMaxShidoCount() > maxShido)
+		maxShido = _pRules->GetMaxShidoCount();
+
 	switch (p)
 	{
 	case Point::Ippon:
-		if (Value(Point::Ippon) > 1)
-			_points[static_cast<int>(Point::Ippon)] = 1;
+		if (Value(Point::Ippon) > maxIppon)
+			_points[static_cast<int>(Point::Ippon)] = maxIppon;
 
 		if (Value(Point::Ippon) < 0)
 			_points[static_cast<int>(Point::Ippon)] = 0;
@@ -82,8 +91,8 @@ void Score::correct_point(Score::Point p)
 		break;
 
 	case Point::Shido:
-		if (Value(Point::Shido) > 4)
-			_points[static_cast<int>(Point::Shido)] = 4;
+		if (Value(Point::Shido) > maxShido)
+			_points[static_cast<int>(Point::Shido)] = maxShido;
 
 		if (Value(Point::Shido) < 0)
 			_points[static_cast<int>(Point::Shido)] = 0;

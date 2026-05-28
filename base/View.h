@@ -82,6 +82,10 @@ private:
 	void update_yuko(Ipponboard::FighterEnum) const;
 	void update_shido(Ipponboard::FighterEnum) const;
 	void update_hansokumake(Ipponboard::FighterEnum) const;
+	// JVP additive scoring (secondary screen): show one big 0..20 total per
+	// fighter instead of the IJF Ippon/Waza-ari/Yuko/Shido indicators.
+	void update_additive_total(Ipponboard::FighterEnum) const;
+	void set_ijf_lamps_visible(bool visible) const;
 	void update_team_score() const;
 	void update_hold_clock(const FighterEnum holder, EHoldState state) const;
 	Ipponboard::FighterEnum GVF_(const Ipponboard::FighterEnum f) const; // GetViewFighter
@@ -113,6 +117,9 @@ private:
 	bool m_drawIppon;
 	bool m_showInfoHeader;
 	QTimer* m_pBlinkTimer;
+	// active score layout on this view: -1 unknown, 0 = IJF lamps, 1 = JVP total.
+	// Visibility is only switched on transition (avoids per-frame relayout flicker).
+	int m_scoreLayout { -1 };
 };
 
 } // namespace Ipponboard

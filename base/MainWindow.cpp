@@ -377,6 +377,7 @@ void MainWindow::ui_check_rules_items()
 	m_pUi->actionRules2017U15->setChecked(rules->IsOfType<Rules2017U15>());
 	m_pUi->actionRules2018->setChecked(rules->IsOfType<Rules2018>());
 	m_pUi->actionRules2025->setChecked(rules->IsOfType<Rules2025>());
+	m_pUi->actionRulesPfalz->setChecked(rules->IsOfType<RulesPfalzU13>());
 
 	if (rules->IsOfType<ClassicRules>())
 	{
@@ -401,6 +402,10 @@ void MainWindow::ui_check_rules_items()
 	else if (rules->IsOfType<Rules2025>())
 	{
 		m_pUi->label_usedRules->setText(m_pUi->actionRules2025->text());
+	}
+	else if (rules->IsOfType<RulesPfalzU13>())
+	{
+		m_pUi->label_usedRules->setText(m_pUi->actionRulesPfalz->text());
 	}
 
 	m_pPrimaryView->UpdateView();

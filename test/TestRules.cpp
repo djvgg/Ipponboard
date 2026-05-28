@@ -32,6 +32,9 @@ TEST_CASE("[Rules] Rulesfactory creates correct rule object")
 
 	rules = RulesFactory::Create(Rules2025::StaticName);
 	REQUIRE(strcmp(rules->Name(), Rules2025::StaticName) == 0);
+
+	rules = RulesFactory::Create(RulesPfalzU13::StaticName);
+	REQUIRE(strcmp(rules->Name(), RulesPfalzU13::StaticName) == 0);
 }
 
 TEST_CASE("[Rules] Default rules are IJF-2025")
@@ -49,7 +52,8 @@ TEST_CASE("[Rules] String list contains all rules")
 	REQUIRE(names.contains(Rules2017::StaticName));
 	REQUIRE(names.contains(Rules2018::StaticName));
 	REQUIRE(names.contains(Rules2025::StaticName));
-	REQUIRE(names.size() == 6);
+	REQUIRE(names.contains(RulesPfalzU13::StaticName));
+	REQUIRE(names.size() == 7);
 }
 
 TEST_CASE("[Rules] 2025: osaekomi values")
@@ -64,4 +68,40 @@ TEST_CASE("[Rules] 2025: osaekomi values")
 
 	INFO("yuko is gained after 5 seconds")
 	REQUIRE(rules->GetOsaekomiValue(Score::Point::Yuko) == 5);
+}
+
+TEST_CASE("[Rules] JVP additive: osaekomi values")
+{
+	auto rules = std::make_shared<RulesPfalzU13>();
+
+	INFO("ippon after 20 seconds")
+	REQUIRE(rules->GetOsaekomiValue(Score::Point::Ippon) == 20);
+
+	INFO("waza-ari after 10 seconds")
+	REQUIRE(rules->GetOsaekomiValue(Score::Point::Wazaari) == 10);
+
+	INFO("yuko after 5 seconds")
+	REQUIRE(rules->GetOsaekomiValue(Score::Point::Yuko) == 5);
+}
+
+TEST_CASE("[Rules] JVP additive: point values 10/5/3/2")
+{
+	auto rules = std::make_shared<RulesPfalzU13>();
+
+	REQUIRE(rules->GetPointValue(Score::Point::Ippon) == 10);
+	REQUIRE(rules->GetPointValue(Score::Point::Wazaari) == 5);
+	REQUIRE(rules->GetPointValue(Score::Point::Yuko) == 3);
+	REQUIRE(rules->GetPointValue(Score::Point::Shido) == 2);
+
+	INFO("no waza-ari-awasete-ippon in the additive system")
+	REQUIRE_FALSE(rules->IsOption_AwaseteIppon());
+}
+
+TEST_CASE("[Rules] JVP additive: per-sequence cap is 10, IJF rulesets uncapped")
+{
+	REQUIRE(RulesPfalzU13().GetMaxSequencePoints() == 10);
+
+	INFO("every IJF ruleset stays uncapped (no behaviour change)")
+	REQUIRE(Rules2025().GetMaxSequencePoints() == INT32_MAX);
+	REQUIRE(ClassicRules().GetMaxSequencePoints() == INT32_MAX);
 }

@@ -45,6 +45,11 @@ public:
 	bool Hansokumake() const { return Value(Point::Hansokumake) != 0; }
 	void Clear();
 
+	// Non-owning ruleset reference used to drive the storage caps (e.g. the
+	// JVP additive system allows >1 Ippon and uncapped Shido). nullptr keeps
+	// the historic IJF caps (Ippon<=1, Shido<=4). The rules outlive the score.
+	void SetRules(const AbstractRules* pRules) { _pRules = pRules; }
+
 protected:
 	virtual void correct_point(Point p);
 
@@ -52,6 +57,7 @@ private:
 	void correct_points();
 
 	int _points[static_cast<int>(Point::_MAX)];
+	const AbstractRules* _pRules { nullptr };
 };
 } // namespace ipponboard
 #endif  // BASE__SCORE_H_

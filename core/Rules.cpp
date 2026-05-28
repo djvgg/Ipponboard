@@ -13,9 +13,27 @@ const char* const Rules2017::StaticName = "IJF-2017";
 const char* const Rules2017U15::StaticName = "IJF-2017 U15";
 const char* const Rules2013::StaticName = "IJF-2013";
 const char* const ClassicRules::StaticName = "Classic";
+const char* const RulesPfalzU13::StaticName = "JVP-Additiv-20";
 
 AbstractRules::AbstractRules()
 {}
+
+int Ipponboard::AbstractRules::GetPointValue(Score::Point p) const
+{
+	// Default = the IJF team-list points (mirrors Fight::eScore_*).
+	switch (p)
+	{
+	case Score::Point::Ippon: return 10;
+
+	case Score::Point::Wazaari: return 7;
+
+	case Score::Point::Yuko: return 5;
+
+	case Score::Point::Shido: return 1;
+
+	default: return 0;
+	}
+}
 
 int Ipponboard::AbstractRules::CompareScore(const Fight& f) const
 {
@@ -79,4 +97,54 @@ int Ipponboard::AbstractRules::CompareScore(const Fight& f) const
 	}
 
 	return 0;
+}
+
+int Ipponboard::RulesPfalzU13::GetTotalScore(const Fight& f, FighterEnum who) const
+{
+	using Point = Score::Point;
+
+	const Score& own = f.GetScore(who);
+	const Score& opp = f.GetScore(GetUkeFromTori(who));
+
+	int total =
+		own.Value(Point::Ippon) * GetPointValue(Point::Ippon)
+		+ own.Wazaari() * GetPointValue(Point::Wazaari)
+		+ own.Yuko() * GetPointValue(Point::Yuko)
+		// each Shido of the opponent is worth +2 for me
+		+ opp.Shido() * GetPointValue(Point::Shido);
+
+	// at most 20 points are reachable (Sore Made)
+	return total > 20 ? 20 : total;
+}
+
+int Ipponboard::RulesPfalzU13::GetDisplayTotal(const Fight& f, FighterEnum who) const
+{
+	return GetTotalScore(f, who);
+}
+
+int Ipponboard::RulesPfalzU13::CompareScore(const Fight& f) const
+{
+	const Score& lhs = f.GetScore(FighterEnum::First);
+	const Score& rhs = f.GetScore(FighterEnum::Second);
+
+	// A direct Hansoku-make decides outright (DQ), regardless of points.
+	if (lhs.Hansokumake() != rhs.Hansokumake())
+	{
+		return lhs.Hansokumake() ? 1 : -1;
+	}
+
+	const int t1 = GetTotalScore(f, FighterEnum::First);
+	const int t2 = GetTotalScore(f, FighterEnum::Second);
+
+	if (t1 > t2)
+	{
+		return -1;
+	}
+
+	if (t1 < t2)
+	{
+		return 1;
+	}
+
+	return 0; // Hiki-wake
 }

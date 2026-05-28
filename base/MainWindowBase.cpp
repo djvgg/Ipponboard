@@ -453,6 +453,15 @@ void MainWindowBase::on_actionRules2025_triggered(bool checked)
 	}
 }
 
+void MainWindowBase::on_actionRulesPfalz_triggered(bool checked)
+{
+	if (checked)
+	{
+		m_pController->SetRules(std::make_shared<RulesPfalzU13>());
+		ui_check_rules_items();
+	}
+}
+
 void MainWindowBase::write_settings()
 {
 	QString iniFile(fm::GetSettingsFilePath(GetConfigFileName().toLatin1()));

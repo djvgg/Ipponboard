@@ -194,3 +194,135 @@ TEST_CASE("[Score] rules 2025: yuko is always less than wazaari")
 	INFO("100 yuko is less than wazaari");
 	REQUIRE(IsScoreLess(rules, yukoScore, wazaariScore));
 }
+
+TEST_CASE("[Score] without a ruleset the historic caps still apply")
+{
+	Score s;
+	s.SetValue(Point::Ippon, 2);
+	INFO("ippon is clamped to 1 when no ruleset is attached (IJF default)");
+	REQUIRE(s.Value(Point::Ippon) == 1);
+
+	Score shido;
+	for (int i = 0; i < 6; ++i) shido.Add(Point::Shido);
+	INFO("shido is clamped to 4 when no ruleset is attached");
+	REQUIRE(shido.Shido() == 4);
+}
+
+TEST_CASE("[Score] JVP additive: scores accumulate past the IJF caps")
+{
+	auto pfalz = std::make_shared<RulesPfalzU13>();
+
+	Score twoIppon;
+	twoIppon.SetRules(pfalz.get());
+	twoIppon.SetValue(Point::Ippon, 2);
+	INFO("two ippon are allowed in the additive system (10+10)");
+	REQUIRE(twoIppon.Value(Point::Ippon) == 2);
+
+	Score fourWaza;
+	fourWaza.SetRules(pfalz.get());
+	for (int i = 0; i < 4; ++i) fourWaza.Add(Point::Wazaari);
+	INFO("four waza-ari are allowed (4x5 = 20)");
+	REQUIRE(fourWaza.Wazaari() == 4);
+
+	Score manyShido;
+	manyShido.SetRules(pfalz.get());
+	for (int i = 0; i < 6; ++i) manyShido.Add(Point::Shido);
+	INFO("shido is uncapped in the additive system");
+	REQUIRE(manyShido.Shido() == 6);
+}
+
+TEST_CASE("[Score] JVP additive: total and winner")
+{
+	auto pfalz = std::make_shared<RulesPfalzU13>();
+
+	SECTION("sum = 10*ippon + 5*wazaari + 3*yuko")
+	{
+		Score s1;
+		s1.SetRules(pfalz.get());
+		s1.Add(Point::Wazaari).Add(Point::Yuko); // 5 + 3 = 8
+		Score s2;
+		s2.SetRules(pfalz.get());
+		Fight f { s1, s2 };
+		REQUIRE(pfalz->GetTotalScore(f, FighterEnum::First) == 8);
+		REQUIRE(pfalz->GetTotalScore(f, FighterEnum::Second) == 0);
+		REQUIRE(pfalz->CompareScore(f) < 0); // First leads
+	}
+
+	SECTION("each shido is worth +2 for the opponent")
+	{
+		Score s1;
+		s1.SetRules(pfalz.get());
+		Score s2;
+		s2.SetRules(pfalz.get());
+		s2.Add(Point::Shido).Add(Point::Shido); // second fighter penalised twice
+		Fight f { s1, s2 };
+		INFO("two shido of fighter 2 give fighter 1 four points");
+		REQUIRE(pfalz->GetTotalScore(f, FighterEnum::First) == 4);
+		REQUIRE(pfalz->GetTotalScore(f, FighterEnum::Second) == 0);
+		REQUIRE(pfalz->CompareScore(f) < 0);
+	}
+
+	SECTION("reaching 20 wins (Sore Made), total clamps at 20")
+	{
+		Score s1;
+		s1.SetRules(pfalz.get());
+		s1.SetValue(Point::Ippon, 2); // 20
+		Score s2;
+		s2.SetRules(pfalz.get());
+		s2.Add(Point::Wazaari); // 5
+		Fight f { s1, s2 };
+		REQUIRE(pfalz->GetTotalScore(f, FighterEnum::First) == 20);
+		REQUIRE(pfalz->CompareScore(f) < 0);
+	}
+
+	SECTION("higher total wins, equal total is a Hiki-wake (draw)")
+	{
+		Score wazaari;
+		wazaari.SetRules(pfalz.get());
+		wazaari.Add(Point::Wazaari); // 5
+		Score twoYuko;
+		twoYuko.SetRules(pfalz.get());
+		twoYuko.Add(Point::Yuko).Add(Point::Yuko); // 6
+		Fight uneven { wazaari, twoYuko };
+		REQUIRE(pfalz->CompareScore(uneven) > 0); // Second leads 6 vs 5
+
+		Score a;
+		a.SetRules(pfalz.get());
+		a.Add(Point::Wazaari); // 5
+		Score b;
+		b.SetRules(pfalz.get());
+		b.Add(Point::Wazaari); // 5
+		Fight draw { a, b };
+		REQUIRE(pfalz->CompareScore(draw) == 0);
+	}
+
+	SECTION("a direct hansoku-make decides regardless of points")
+	{
+		Score s1;
+		s1.SetRules(pfalz.get());
+		s1.SetValue(Point::Ippon, 1); // 10 points on the board
+		s1.Add(Point::Hansokumake);   // but disqualified
+		Score s2;
+		s2.SetRules(pfalz.get());
+		Fight f { s1, s2 };
+		REQUIRE(pfalz->CompareScore(f) > 0); // Second wins despite trailing on points
+	}
+}
+
+TEST_CASE("[Score] JVP additive: GetDisplayTotal mirrors total; IJF returns -1")
+{
+	auto pfalz = std::make_shared<RulesPfalzU13>();
+	Score s1;
+	s1.SetRules(pfalz.get());
+	s1.Add(Point::Wazaari).Add(Point::Yuko); // 5 + 3 = 8
+	Score s2;
+	s2.SetRules(pfalz.get());
+	Fight f { s1, s2 };
+
+	REQUIRE(pfalz->GetDisplayTotal(f, FighterEnum::First) == 8);
+	REQUIRE(pfalz->GetDisplayTotal(f, FighterEnum::Second) == 0);
+
+	INFO("non-additive IJF ruleset signals 'no total' with -1");
+	Rules2025 ijf;
+	REQUIRE(ijf.GetDisplayTotal(f, FighterEnum::First) == -1);
+}

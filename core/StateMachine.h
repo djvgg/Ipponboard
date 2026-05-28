@@ -289,7 +289,14 @@ private:
 	inline const Score& Score_(FighterEnum who) const
 	{ return m_pCore->get_score(who); }
 
+	// Own offensive points (Ippon/Waza-ari/Yuko, additive scale) of a fighter,
+	// used to enforce the per-sequence cap (JVP § 3.5.3).
+	int own_offensive_points(FighterEnum who) const;
+
 	IControllerCore* m_pCore;
+	// Snapshot of own_offensive_points per fighter at the last Hajime; the
+	// sequence delta (current - snapshot) is capped by GetMaxSequencePoints().
+	int m_seqSnapshot[2] { 0, 0 };
 };
 
 typedef msm::back::state_machine<IpponboardSM_> IpponboardSM;

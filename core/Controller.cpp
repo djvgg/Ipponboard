@@ -109,6 +109,9 @@ void Controller::InitTournament(TournamentMode const& mode)
 			fight.SetRoundTime(m_mode.GetFightDuration(weight));
 			fight.rules = m_rules;
 			fight.rules->SetCountSubscores(m_mode.IsOptionSet(TournamentMode::str_Option_AllSubscoresCount));
+			// drive the score storage caps from the active ruleset (e.g. JVP additive)
+			fight.GetScore1().SetRules(fight.rules.get());
+			fight.GetScore2().SetRules(fight.rules.get());
 
 			SimpleFighter emptyFighter;
 			emptyFighter.name = emptyFighterName;
@@ -174,6 +177,13 @@ int Controller::GetScore(FighterEnum whos, Score::Point point) const
 	}
 
 	return value;
+}
+
+//=========================================================
+int Controller::GetDisplayScore(FighterEnum who) const
+//=========================================================
+{
+	return m_rules->GetDisplayTotal(current_fight(), who);
 }
 
 //=========================================================
@@ -692,6 +702,8 @@ void Controller::SetRules(std::shared_ptr<AbstractRules> rules)
 		for (auto & fight : *pRound)
 		{
 			fight.rules = rules;
+			fight.GetScore1().SetRules(fight.rules.get());
+			fight.GetScore2().SetRules(fight.rules.get());
 		}
 	}
 }
@@ -809,6 +821,10 @@ void Controller::reset_fight()
 	fight.SetGoldenScore(false);
 	fight.is_saved = false;
 	fight.rules = m_rules;
+	// the scores above were freshly default-constructed (Score()), so re-attach
+	// the ruleset — otherwise the storage caps fall back to the IJF defaults
+	fight.GetScore1().SetRules(fight.rules.get());
+	fight.GetScore2().SetRules(fight.rules.get());
 	m_roundTime = QTime(0,0,0,0).addSecs(m_mode.GetFightDuration(current_fight().weight));
 	*m_pTimeMain = m_roundTime;
 
@@ -1013,6 +1029,8 @@ void Controller::SetFight(
 	fight.weight = weight;
 	fight.SetSecondsElapsed(0);
 	fight.rules = m_rules;
+	fight.GetScore1().SetRules(fight.rules.get());
+	fight.GetScore2().SetRules(fight.rules.get());
 
 	// TODO: set fight.max_time_in_seconds
 	// TODO: set fight.allSubscoresCount

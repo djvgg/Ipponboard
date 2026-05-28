@@ -169,30 +169,40 @@ void View::UpdateView()
 {
 	Q_ASSERT(m_pController && "Controller not set!");
 
-	if (m_pController->GetRules()->GetMaxShidoCount() < 3)
-	{
-		ui->image_shido3_first->hide();
-		ui->image_shido3_second->hide();
-	}
-	else
-	{
-		ui->image_shido3_first->show();
-		ui->image_shido3_second->show();
-	}
+	// JVP additive scoring shows one big total on the secondary screen. The
+	// per-category indicator visibility below must be skipped in that case,
+	// otherwise it re-shows the yuko/shido widgets that the layout transition
+	// hid — every frame — leaving a second (yuko) number next to the total.
+	const bool wantAdditive = is_secondary()
+							  && (m_pController->GetDisplayScore(FighterEnum::First) >= 0);
 
-	if (m_pController->GetRules()->IsOption_HasYuko())
+	if (!wantAdditive)
 	{
-		ui->text_yuko_first->show();
-		ui->text_yuko_second->show();
-		ui->text_yuko_desc1->show();
-		ui->text_yuko_desc2->show();
-	}
-	else
-	{
-		ui->text_yuko_first->hide();
-		ui->text_yuko_second->hide();
-		ui->text_yuko_desc1->hide();
-		ui->text_yuko_desc2->hide();
+		if (m_pController->GetRules()->GetMaxShidoCount() < 3)
+		{
+			ui->image_shido3_first->hide();
+			ui->image_shido3_second->hide();
+		}
+		else
+		{
+			ui->image_shido3_first->show();
+			ui->image_shido3_second->show();
+		}
+
+		if (m_pController->GetRules()->IsOption_HasYuko())
+		{
+			ui->text_yuko_first->show();
+			ui->text_yuko_second->show();
+			ui->text_yuko_desc1->show();
+			ui->text_yuko_desc2->show();
+		}
+		else
+		{
+			ui->text_yuko_first->hide();
+			ui->text_yuko_second->hide();
+			ui->text_yuko_desc1->hide();
+			ui->text_yuko_desc2->hide();
+		}
 	}
 
 	show_golden_score(m_pController->IsGoldenScore());
@@ -250,19 +260,67 @@ void View::UpdateView()
 	ui->text_firstname_first->setVisible(false);
 	ui->text_firstname_second->setVisible(false);
 
-	// first score
-	update_ippon(FighterEnum::First);
-	update_wazaari(FighterEnum::First);
-	update_yuko(FighterEnum::First);
-	update_shido(FighterEnum::First);
-	update_hansokumake(FighterEnum::First);
+	// the secondary screen shows the additive total (wantAdditive, computed at
+	// the top of UpdateView); the KR/primary view keeps the IJF lamps
+	const int scoreLayout = wantAdditive ? 1 : 0;
 
-	// second score
-	update_ippon(FighterEnum::Second);
-	update_wazaari(FighterEnum::Second);
-	update_yuko(FighterEnum::Second);
-	update_shido(FighterEnum::Second);
-	update_hansokumake(FighterEnum::Second);
+	// Switch widget visibility/layout ONLY on transition. Doing the hide/show
+	// on every UpdateView caused a one-frame relayout strip on the secondary
+	// screen on each score (Bug 1), and left the IJF labels mis-centred after
+	// switching back to a classic ruleset (Bug 2). Steady state only sets text.
+	if (m_scoreLayout != scoreLayout)
+	{
+		m_scoreLayout = scoreLayout;
+
+		if (wantAdditive)
+		{
+			// the blink timer drives update_ippon() — must not fight the total
+			if (m_pBlinkTimer && m_pBlinkTimer->isActive())
+				m_pBlinkTimer->stop();
+
+			set_ijf_lamps_visible(false);
+			ui->text_wazaari_desc1->SetText("");
+			ui->text_wazaari_desc2->SetText("");
+			ui->text_yuko_desc1->SetText("");
+			ui->text_yuko_desc2->SetText("");
+			ui->text_ippon_first->SetBlinking(false);
+			ui->text_ippon_second->SetBlinking(false);
+			ui->text_ippon_first->show();
+			ui->text_ippon_second->show();
+		}
+		else
+		{
+			// restore the full IJF layout; texts are re-driven by update_* below
+			set_ijf_lamps_visible(true);
+			ui->text_ippon_desc1->SetText("I");
+			ui->text_ippon_desc2->SetText("I");
+		}
+	}
+
+	if (wantAdditive)
+	{
+		update_additive_total(FighterEnum::First);
+		update_additive_total(FighterEnum::Second);
+		// a direct Hansoku-make still decides — keep it visible
+		update_hansokumake(FighterEnum::First);
+		update_hansokumake(FighterEnum::Second);
+	}
+	else
+	{
+		// first score
+		update_ippon(FighterEnum::First);
+		update_wazaari(FighterEnum::First);
+		update_yuko(FighterEnum::First);
+		update_shido(FighterEnum::First);
+		update_hansokumake(FighterEnum::First);
+
+		// second score
+		update_ippon(FighterEnum::Second);
+		update_wazaari(FighterEnum::Second);
+		update_yuko(FighterEnum::Second);
+		update_shido(FighterEnum::Second);
+		update_hansokumake(FighterEnum::Second);
+	}
 
 	update_team_score();
 
@@ -888,6 +946,47 @@ void View::update_hansokumake(Ipponboard::FighterEnum who) const
 	{
 		pImage->UpdateImage(eTypePrimary == m_Type ? ":res/images/off_hansokumake.png" : ":res/images/off_empty.png");
 	}
+}
+
+//=========================================================
+void View::set_ijf_lamps_visible(bool visible) const
+//=========================================================
+{
+	QWidget* const lamps[] =
+	{
+		ui->text_wazaari_first, ui->text_wazaari_second,
+		ui->text_yuko_first, ui->text_yuko_second,
+		ui->image_shido1_first, ui->image_shido2_first, ui->image_shido3_first,
+		ui->image_shido1_second, ui->image_shido2_second, ui->image_shido3_second
+	};
+
+	for (QWidget* w : lamps)
+		w->setVisible(visible);
+}
+
+//=========================================================
+void View::update_additive_total(Ipponboard::FighterEnum who) const
+//=========================================================
+{
+	// Steady state only: the widget visibility was already set on the layout
+	// transition in UpdateView(). Here we just refresh the text — no hide/show,
+	// so there is no per-score relayout on the secondary screen.
+	ScaledText* digitTotal = ui->text_ippon_first;
+	auto totalLabel = ui->text_ippon_desc1;
+
+	if (FighterEnum::Second == who)
+	{
+		digitTotal = ui->text_ippon_second;
+		totalLabel = ui->text_ippon_desc2;
+	}
+
+	const int total = m_pController->GetDisplayScore(GVF_(who));
+	digitTotal->SetText(QString::number(total < 0 ? 0 : total), ScaledText::eSize_full);
+
+	// Hiki-wake: regular time fully elapsed with no winner (no golden score in JVP)
+	const bool drawnAtEnd = (m_pController->GetSecondsRemaining() == 0)
+							 && (m_pController->GetWinner() == FighterEnum::Nobody);
+	totalLabel->SetText(drawnAtEnd ? "HIKI-WAKE" : "");
 }
 
 //=========================================================

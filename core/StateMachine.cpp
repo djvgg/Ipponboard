@@ -11,28 +11,69 @@ using namespace Ipponboard;
 using Point = Score::Point;
 
 //---------------------------------------------------------
+int IpponboardSM_::own_offensive_points(FighterEnum who) const
+//---------------------------------------------------------
+{
+	auto pRules = m_pCore->GetRules();
+	const Score& s = Score_(who);
+
+	return s.Value(Point::Ippon) * pRules->GetPointValue(Point::Ippon)
+		   + s.Wazaari() * pRules->GetPointValue(Point::Wazaari)
+		   + s.Yuko() * pRules->GetPointValue(Point::Yuko);
+}
+
+//---------------------------------------------------------
 void IpponboardSM_::add_point(HoldTimeEvent const& evt)
 //---------------------------------------------------------
 {
 	auto pRules = m_pCore->GetRules();
 
-	if (m_pCore->is_auto_adjust())
+	if (!m_pCore->is_auto_adjust())
 	{
+		return;
+	}
 
-		if (pRules->GetOsaekomiValue(Point::Yuko) == evt.secs)
-		{
-			Score_(evt.tori).Add(Point::Yuko);
-		}
-		else if (pRules->GetOsaekomiValue(Point::Wazaari) == evt.secs)
-		{
-			Score_(evt.tori).Remove(Point::Yuko);
-			Score_(evt.tori).Add(Point::Wazaari);
-		}
-		else if (pRules->GetOsaekomiValue(Point::Ippon) == evt.secs)
-		{
-			Score_(evt.tori).Remove(Point::Wazaari);
-			Score_(evt.tori).Add(Point::Ippon);
-		}
+	// JVP § 3.5.3: cap the points gained in one Hajime–Mate sequence. For every
+	// IJF ruleset GetMaxSequencePoints() == INT32_MAX, so the escalation below
+	// is never suppressed and behaviour is unchanged.
+	const int cap = pRules->GetMaxSequencePoints();
+	const int snapshot = m_seqSnapshot[static_cast<int>(evt.tori)];
+	const int ownNow = own_offensive_points(evt.tori);
+
+	const int vYuko = pRules->GetPointValue(Point::Yuko);
+	const int vWaza = pRules->GetPointValue(Point::Wazaari);
+	const int vIppon = pRules->GetPointValue(Point::Ippon);
+
+	auto wouldExceedCap = [&](int prospectiveOwnPoints)
+	{
+		return (prospectiveOwnPoints - snapshot) > cap;
+	};
+
+	if (pRules->GetOsaekomiValue(Point::Yuko) == evt.secs)
+	{
+		if (wouldExceedCap(ownNow + vYuko))
+			return;
+
+		Score_(evt.tori).Add(Point::Yuko);
+	}
+	else if (pRules->GetOsaekomiValue(Point::Wazaari) == evt.secs)
+	{
+		// escalation replaces the hold's yuko with a waza-ari
+		if (wouldExceedCap(ownNow - vYuko + vWaza))
+			return;
+
+		Score_(evt.tori).Remove(Point::Yuko);
+		Score_(evt.tori).Add(Point::Wazaari);
+	}
+	else if (pRules->GetOsaekomiValue(Point::Ippon) == evt.secs)
+	{
+		// escalation replaces the hold's waza-ari with an ippon; suppressed for
+		// JVP once the sequence would pass 10 (e.g. after a thrown waza-ari)
+		if (wouldExceedCap(ownNow - vWaza + vIppon))
+			return;
+
+		Score_(evt.tori).Remove(Point::Wazaari);
+		Score_(evt.tori).Add(Point::Ippon);
 	}
 }
 
@@ -165,6 +206,11 @@ void IpponboardSM_::stop_timer(Hajime_Mate const& /*evt*/)
 
 void IpponboardSM_::start_timer(Hajime_Mate const& /*evt*/)
 {
+	// snapshot offensive points at Hajime so the per-sequence cap (JVP § 3.5.3)
+	// measures only what is scored until the next Mate
+	m_seqSnapshot[static_cast<int>(FighterEnum::First)] = own_offensive_points(FighterEnum::First);
+	m_seqSnapshot[static_cast<int>(FighterEnum::Second)] = own_offensive_points(FighterEnum::Second);
+
 	m_pCore->reset_timer(eTimer_Hold);
 	m_pCore->start_timer(eTimer_Main);
 }
