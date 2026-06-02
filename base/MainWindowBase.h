@@ -89,6 +89,7 @@ static const char* const str_tag_Sounds = "Sounds";
 static const char* const str_tag_Options = "Options";
 static const char* const str_tag_sound_time_ends = "TimeEnds";
 static const char* const str_tag_rules = "Rules";
+static const char* const str_tag_rulesByAgeGroup = "RulesByAgeGroup";
 static const char* const str_tag_autoAdjustPoints = "AutoAdjustPoints";
 static const char* const str_tag_IpponboardPort = "IpponboardPort";
 static const char* const str_tag_WebsitePort = "WebsitePort";

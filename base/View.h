@@ -62,6 +62,7 @@ public:
 	void SetMat(const QString& mat) { m_mat = mat; }
 	void SetWeight(const QString& weight) { m_weight = weight; }  //TODO: move to controller !!
 	void SetCategory(const QString& cat) { m_category = cat; }  //TODO: move to controller !!
+	void SetPool(const QString& pool) { m_pool = pool; }  // optional, display-ready (e.g. "Pool 3")
 
 protected:
 	//void changeEvent( QEvent* event );
@@ -114,6 +115,7 @@ private:
 	QString m_mat;
 	QString m_weight;
 	QString m_category;
+	QString m_pool;
 	bool m_drawIppon;
 	bool m_showInfoHeader;
 	QTimer* m_pBlinkTimer;

@@ -39,7 +39,7 @@ public:
     void BroadcastData(const QJsonObject& json);
 
 signals:
-    void fightersAdded(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name);
+    void fightersAdded(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name, const QString& pool);
 
 protected:
     void incomingConnection(qintptr socketDescriptor) override;

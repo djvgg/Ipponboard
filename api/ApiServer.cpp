@@ -152,7 +152,7 @@ void ApiServer::routeRequest(QTcpSocket* pSocket, const QString& method, const Q
                 m_callbackUrl = QString("http://%1:%2/api/ippon-score").arg(hostForUrl).arg(m_websitePort);
 
                 qInfo() << "Callback URL set automatically to:" << m_callbackUrl << "(Using WebsitePort:" << m_websitePort << ")";
-                emit fightersAdded(result.category, result.weightClass, result.fighter1Name, result.fighter2Name);
+                emit fightersAdded(result.category, result.weightClass, result.fighter1Name, result.fighter2Name, result.pool);
             }
         }
     }

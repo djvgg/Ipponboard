@@ -54,6 +54,8 @@ PostFightersResult ApiEndpoints::HandlePostFighters(QTcpSocket* pSocket, const Q
     result.success = true;
     result.category = fighter1.category;
     result.weightClass = fighter1.weight;
+    // optional top-level pool label (sibling of fighter1/fighter2); empty if absent
+    result.pool = json.value("pool").toString();
     result.fighter1Name = QString("%1 %2").arg(fighter1.first_name, fighter1.last_name);
     result.fighter2Name = QString("%1 %2").arg(fighter2.first_name, fighter2.last_name);
     result.callbackUrl = json.value("callback").toString();
@@ -69,8 +71,8 @@ Ipponboard::Fighter ApiEndpoints::ParseFighterFromJson(const QJsonObject& fighte
     QString gender    = fighterJson.value("gender").toString();
     QString ageGroup  = fighterJson.value("agegroup").toString();
  
-    QString category = gender + ageGroup;
-    
+    QString category = BuildCategoryName(gender, ageGroup);
+
     if (category.isEmpty())
     {
         qWarning() << "Received empty fighter category info!";

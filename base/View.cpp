@@ -40,6 +40,7 @@ View::View(IController* pController, EditionType edition, EType type, QWidget* p
 			QCoreApplication::applicationVersion())
 	, m_weight("")
 	, m_category("")
+	, m_pool("")
 	, m_drawIppon(false)
 	, m_showInfoHeader(true)
     , m_pBlinkTimer(nullptr)
@@ -227,6 +228,11 @@ void View::UpdateView()
             infoText += "  ";
 
         infoText += m_weight;//.toUpper();
+
+        // optional pool label (e.g. "Pool 3"), shown verbatim; empty -> nothing
+        if (!m_pool.isEmpty())
+            infoText += "   " + m_pool;
+
         ui->text_weight->SetText(infoText, ScaledText::eSize_normal);
 	}
 

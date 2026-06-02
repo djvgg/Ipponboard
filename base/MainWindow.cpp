@@ -483,6 +483,7 @@ void MainWindow::write_specific_settings(QSettings& settings)
 		settings.remove("");
 		settings.setValue(str_tag_MatLabel, m_MatLabel);
 		settings.setValue(str_tag_rules, m_pController->GetRules()->Name());
+		settings.setValue(str_tag_rulesByAgeGroup, m_rulesByAgeGroup);
 	}
 	settings.endGroup();
 }
@@ -498,6 +499,10 @@ void MainWindow::read_specific_settings(QSettings& settings)
 		// rules
 		auto rules = RulesFactory::Create(settings.value(str_tag_rules).toString());
 		m_pController->SetRules(rules);
+
+		// age-group -> ruleset map for the POST /fighters auto-switch (configurable)
+		m_rulesByAgeGroup = settings.value(str_tag_rulesByAgeGroup,
+										   Ipponboard::DefaultRulesByAgeGroupSpec()).toString();
 	}
 	settings.endGroup();
 }
@@ -510,17 +515,54 @@ void MainWindow::UpdateGoldenScoreView()
 
 void MainWindow::SelectCategory(const QString& category)
 {
-	int indexCategory = m_pUi->comboBox_weight_class->findText(category, Qt::MatchExactly);
+	auto* combo = m_pUi->comboBox_weight_class;
+
+	// Resolve a (possibly raw) API label to the canonical catalogue text: exact
+	// first, then case-insensitive (e.g. "mU15" -> "MU15").
+	auto resolve = [combo](const QString& name) -> int
+	{
+		int idx = combo->findText(name, Qt::MatchExactly);
+		if (idx == -1)
+		{
+			for (int i = 0; i < combo->count(); ++i)
+			{
+				if (combo->itemText(i).compare(name, Qt::CaseInsensitive) == 0)
+				{
+					idx = i;
+					break;
+				}
+			}
+		}
+		return idx;
+	};
+
+	int indexCategory = resolve(category);
+
+	// Gender-neutral age groups diverge between the repos: Ipponboard's catalogue
+	// stores U9/U11 without a gender prefix while gendered groups are M/F-prefixed,
+	// and JudgeFrontend treats U11/U13 as gender-neutral. If the gender-prefixed
+	// label ("MU11") doesn't resolve, retry with the leading M/F/W marker stripped
+	// so a neutral catalogue entry ("U11") still matches. The reverse (JF-neutral
+	// "U13" vs catalogue-gendered "MU13/FU13") stays unresolved by design and falls
+	// through to the graceful "round time unchanged" path in onFightReceived.
+	if (indexCategory == -1 && category.size() > 1)
+	{
+		const QChar lead = category.at(0).toLower();
+		if (lead == QChar('m') || lead == QChar('f') || lead == QChar('w'))
+		{
+			indexCategory = resolve(category.mid(1));
+		}
+	}
 
 	QString finalCategory = category;
 	if (indexCategory != -1)
 	{
-		m_pUi->comboBox_weight_class->setCurrentIndex(indexCategory);
-		finalCategory = m_pUi->comboBox_weight_class->itemText(indexCategory);
+		combo->setCurrentIndex(indexCategory);
+		finalCategory = combo->itemText(indexCategory);
 	}
 	else
 	{
-		m_pUi->comboBox_weight_class->setCurrentText(category);
+		combo->setCurrentText(category);
 	}
 
 	// Trigger category logic (fills the weight list)
@@ -571,7 +613,7 @@ void MainWindow::SetFighters(const QString& fighter1Name, const QString& fighter
 	on_comboBox_name_second_activated(fighter2Name);
 }
 
-void MainWindow::onFightReceived(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name)
+void MainWindow::onFightReceived(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name, const QString& pool)
 {
 	// Block signals to prevent flickering/recursion while we set multiple values
 	m_pUi->comboBox_weight_class->blockSignals(true);
@@ -581,7 +623,52 @@ void MainWindow::onFightReceived(const QString& category, const QString& weightC
 
 	SelectCategory(category);
 	SelectWeight(weightClass);
+
+	// Optional pool label (e.g. "Pool 3") — shown verbatim in the info bar; empty -> nothing.
+	// Set before SetFighters so its UpdateView renders the pool in every branch.
+	m_pPrimaryView->SetPool(pool);
+	m_pSecondaryView->SetPool(pool);
+
 	SetFighters(fighter1Name, fighter2Name);
+
+	// Auto-apply the round time of the received fight's category so the correct
+	// fight time (and golden-score time, which the GS toggle reads fresh from the
+	// category) is in effect. The weight/category combo-box change handlers do NOT
+	// touch the clock, so without this the time stays at the mode-load value.
+	const QString resolvedCategory = m_pUi->comboBox_weight_class->currentText();
+	FightCategory cat(resolvedCategory);
+	if (m_pCategoryManager->GetCategory(resolvedCategory, cat) && cat.GetRoundTime() > 0)
+	{
+		m_pController->SetRoundTime(QTime(0, 0, 0, 0).addSecs(cat.GetRoundTime()));
+	}
+	else
+	{
+		qWarning() << "POST /fighters: no FightCategory match for" << resolvedCategory
+				   << "- round time unchanged";
+	}
+
+	// Auto-select the ruleset for the received age group (U9/U11 -> JVP additive,
+	// everything else -> IJF), driven by the configurable Ipponboard.ini
+	// RulesByAgeGroup map. Empty/unresolved age group -> leave the ruleset as is.
+	const QString ageGroup = AgeGroupFromCategory(resolvedCategory);
+	if (!ageGroup.isEmpty())
+	{
+		const QString wantRules = RulesetForAgeGroup(
+			ParseRulesByAgeGroup(m_rulesByAgeGroup), ageGroup, Rules2025::StaticName);
+		if (wantRules != m_pController->GetRules()->Name())
+		{
+			m_pController->SetRules(RulesFactory::Create(wantRules));
+		}
+	}
+
+	// Operational trace of what the received fight actually applied (category resolve,
+	// fight time, ruleset auto-switch, pool label) — useful when debugging at a live mat.
+	qInfo() << "POST /fighters applied:"
+			<< "category=" << resolvedCategory
+			<< "ageGroup=" << ageGroup
+			<< "ruleset=" << m_pController->GetRules()->Name()
+			<< "roundTime=" << m_pController->GetFightTimeString()
+			<< "pool=" << (pool.isEmpty() ? QStringLiteral("-") : pool);
 
 	// Unblock signals
 	m_pUi->comboBox_weight_class->blockSignals(false);

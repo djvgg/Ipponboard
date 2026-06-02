@@ -6,6 +6,7 @@
 #define BASIC_EDITION_MAINWINDOW_H_
 
 #include "../base/MainWindowBase.h"
+#include "../base/RulesByAgeGroup.h"
 #include "../util/helpers.hpp"
 #include <memory>
 
@@ -70,7 +71,7 @@ protected slots:
 private slots:
 	void on_button_send_clicked();
 	void on_button_reload_clicked();
-	void onFightReceived(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name);
+	void onFightReceived(const QString& category, const QString& weightClass, const QString& fighter1Name, const QString& fighter2Name, const QString& pool);
 	void on_actionAutoAdjustPoints_toggled(bool checked) override;
 	void on_actionViewInfoBar_toggled(bool checked);
 	void on_toolButton_viewSecondaryScreen_toggled();
@@ -83,6 +84,9 @@ private:
 	std::unique_ptr<Ui::MainWindow> m_pUi;
 	std::shared_ptr<Ipponboard::FightCategoryMgr> m_pCategoryManager;
 	QStringList m_CurrentFighterNames;
+	// Age-group -> ruleset map (Ipponboard.ini RulesByAgeGroup); drives the
+	// POST /fighters ruleset auto-switch. Default = U9/U11 -> JVP additive.
+	QString m_rulesByAgeGroup { Ipponboard::DefaultRulesByAgeGroupSpec() };
 };
 
 #endif  // BASIC_EDITION_MAINWINDOW_H_

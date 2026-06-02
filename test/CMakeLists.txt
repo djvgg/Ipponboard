@@ -31,6 +31,8 @@ endif()
 
 set(SOURCES
     IpponboardTest.cpp
+    TestApiCategory.cpp
+    TestRulesByAgeGroup.cpp
     TestFight.cpp
     TestJson.cpp
     TestRules.cpp
