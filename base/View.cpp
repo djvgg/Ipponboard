@@ -781,6 +781,27 @@ void View::update_ippon(Ipponboard::FighterEnum who) const
 
 	const int score = m_pController->GetScore(GVF_(who), Point::Ippon);
 
+	// JVP additive (>1 Ippon allowed) on the operator console: render Ippon as a
+	// plain count digit — exactly like Waza-ari/Yuko — instead of the IJF
+	// "IPPON" wordmark + blink (which assumes Ippon=1 ends the bout and renders
+	// the rotated wordmark). The spectator screen keeps the wordmark/blink below.
+	if (!is_secondary() && m_pController->GetRules()->GetMaxIpponCount() > 1)
+	{
+		digit_ippon->SetBlinking(false);
+		digit_ippon->show();
+		digit_wazaari->show();
+		wazaariLabel->SetText("W");
+
+		if (m_pController->GetRules()->IsOption_HasYuko())
+		{
+			digit_yuko->show();
+			yukoLabel->SetText("Y");
+		}
+
+		digit_ippon->SetText(QString::number(score), ScaledText::eSize_full);
+		return;
+	}
+
 	if (score != 0)
 	{
 		Q_ASSERT(m_pBlinkTimer);

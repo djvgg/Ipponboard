@@ -156,7 +156,12 @@ int Controller::GetScore(FighterEnum whos, Score::Point point) const
 		break;
 
 	case Point::Ippon:
-		if (score.Ippon() || m_rules->IsAwaseteIppon(score))
+		// Additive rulesets (JVP) allow >1 Ippon and have no Awasete-Ippon —
+		// expose the real count so the operator console can show it like
+		// Waza-ari/Yuko. IJF stays a 0/1 flag incl. the Awasete-Ippon rule.
+		if (m_rules->GetMaxIpponCount() > 1)
+			value = score.Value(Point::Ippon);
+		else if (score.Ippon() || m_rules->IsAwaseteIppon(score))
 			value = 1;
 		else
 			value = 0;
