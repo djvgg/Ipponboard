@@ -105,3 +105,27 @@ TEST_CASE("[Rules] JVP additive: per-sequence cap is 10, IJF rulesets uncapped")
 	REQUIRE(Rules2025().GetMaxSequencePoints() == INT32_MAX);
 	REQUIRE(ClassicRules().GetMaxSequencePoints() == INT32_MAX);
 }
+
+TEST_CASE("[Rules] additive Hansoku-make awards no Ippon; IJF does")
+{
+	// Drives the StateMachine gate: under IJF a direct Hansoku-make hands the
+	// opponent a full Ippon (= win), but in the JVP additive system it is a pure
+	// DQ (WKO §3.5.2) — adding an Ippon would inflate the opponent's 0..20 total.
+	REQUIRE_FALSE(RulesPfalzU13().IsOption_HansokumakeAwardsIppon());
+
+	INFO("IJF rulesets keep the Ippon-on-HM behaviour")
+	REQUIRE(Rules2025().IsOption_HansokumakeAwardsIppon());
+	REQUIRE(ClassicRules().IsOption_HansokumakeAwardsIppon());
+}
+
+TEST_CASE("[Rules] Shido is uncapped in the additive system, <=3 under IJF")
+{
+	// The operator console renders a Shido *counter* (digit) instead of the 3 IJF
+	// lamps exactly when GetMaxShidoCount() > 3 — 3 lamps cannot show 4+ Shido.
+	// This is the predicate View::update_shido() keys on, so guard it here.
+	REQUIRE(RulesPfalzU13().GetMaxShidoCount() > 3);
+
+	INFO("IJF rulesets stay within the 3-lamp range (lamp display unchanged)")
+	REQUIRE(Rules2025().GetMaxShidoCount() <= 3);
+	REQUIRE(ClassicRules().GetMaxShidoCount() <= 3);
+}

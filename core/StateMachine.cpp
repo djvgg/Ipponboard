@@ -273,7 +273,11 @@ void IpponboardSM_::add_point(PointEvent<revoke_shido_hm_type> const& evt)
 
 	if (Score_(evt.tori).Hansokumake())
 	{
-		Score_(uke).Remove(Point::Ippon);
+		// mirror add_point(hansokumake): only the IJF path added the opponent's
+		// Ippon, so only revoke it there — otherwise we'd strip a legitimately
+		// scored Ippon in the additive system.
+		if (m_pCore->GetRules()->IsOption_HansokumakeAwardsIppon())
+			Score_(uke).Remove(Point::Ippon);
 		Score_(evt.tori).Remove(Point::Hansokumake);
 	}
 	else
@@ -288,7 +292,12 @@ void IpponboardSM_::add_point(PointEvent<revoke_shido_hm_type> const& evt)
 			{
 				Score_(uke).Remove(Point::Ippon);
 			}
-			else
+			// mirror add_point(shido): only undo the shido->point escalation when
+			// the ruleset actually awards points per shido. JVP/additive keeps this
+			// off (shido is a display-only +2), so a revoke must NOT touch the
+			// opponent's real throw-scores. (maxShidoCount+1 == Shido() above mirrors
+			// the un-gated hansoku escalation and stays outside this guard.)
+			else if (pRules->IsOption_ShidoAddsPoint())
 			{
 				if (maxShidoCount > 2 && 4 == Score_(evt.tori).Shido())
 				{
@@ -314,7 +323,12 @@ void IpponboardSM_::add_point(PointEvent<revoke_shido_hm_type> const& evt)
 void IpponboardSM_::add_point(PointEvent<hansokumake_type> const& evt)
 {
 	FighterEnum uke = GetUkeFromTori(evt.tori);
-	Score_(uke).Add(Point::Ippon);
+	// IJF: Hansoku-make awards the opponent a full Ippon (= the win). The JVP
+	// additive system treats a direct Hansoku-make as a pure DQ (WKO §3.5.2),
+	// decided by CompareScore's HM override — it must NOT add 10 points to the
+	// opponent's 0..20 total.
+	if (m_pCore->GetRules()->IsOption_HansokumakeAwardsIppon())
+		Score_(uke).Add(Point::Ippon);
 	Score_(evt.tori).Add(Point::Hansokumake);
 
 	m_pCore->stop_timer(eTimer_Main);

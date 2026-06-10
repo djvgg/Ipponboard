@@ -51,6 +51,11 @@ public:
 	virtual bool IsOption_AwaseteIppon() const { return true; }
 	virtual bool IsOption_HasYuko() const { return true; }
 	virtual bool IsOption_OpenEndGoldenScore() const { return true; }
+	// IJF: a direct Hansoku-make awards the opponent a full Ippon (= the win).
+	// The JVP additive system treats it as a pure disqualification (WKO §3.5.2)
+	// decided via the Hansoku-make override in CompareScore, so it must NOT add
+	// 10 points to the opponent's 0..20 total. Pfalz overrides this to false.
+	virtual bool IsOption_HansokumakeAwardsIppon() const { return true; }
 
 	virtual int CompareScore(const Fight& f) const;
 	virtual int GetMaxShidoCount() const { return 3; }
@@ -258,6 +263,8 @@ public:
 	virtual bool IsOption_ShidoAddsPoint() const final { return false; }
 	virtual bool IsOption_ShidoScoreCounts() const final { return false; }
 	virtual bool IsOption_AwaseteIppon() const final { return false; }
+	// direct Hansoku-make = pure DQ (WKO §3.5.2), no Ippon added to the opponent
+	virtual bool IsOption_HansokumakeAwardsIppon() const final { return false; }
 	virtual bool IsAwaseteIppon(Score const&) const final { return false; }
 	virtual bool IsOption_HasYuko() const final { return true; }
 	virtual bool IsOption_OpenEndGoldenScore() const final { return false; }

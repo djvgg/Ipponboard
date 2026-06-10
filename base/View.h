@@ -86,6 +86,9 @@ private:
 	// JVP additive scoring (secondary screen): show one big 0..20 total per
 	// fighter instead of the IJF Ippon/Waza-ari/Yuko/Shido indicators.
 	void update_additive_total(Ipponboard::FighterEnum) const;
+	// JVP additive scoring (operator console): show each fighter's running 0..20
+	// total next to the main clock while keeping the IJF lamp layout otherwise.
+	void update_operator_total(Ipponboard::FighterEnum) const;
 	void set_ijf_lamps_visible(bool visible) const;
 	void update_team_score() const;
 	void update_hold_clock(const FighterEnum holder, EHoldState state) const;

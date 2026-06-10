@@ -54,6 +54,14 @@ View::View(IController* pController, EditionType edition, EType type, QWidget* p
 	ui->image_shido1_first->UpdateImage(":res/images/off.png");
 	ui->image_shido2_first->UpdateImage(":res/images/off.png");
 	ui->image_shido3_first->UpdateImage(":res/images/off.png");
+	// additive Shido count digit is hidden until update_shido() shows it (operator
+	// console, JVP additive ruleset); see update_shido() / set_ijf_lamps_visible()
+	ui->text_shido_first->hide();
+	ui->text_shido_second->hide();
+	// additive 0..20 total next to the clock — operator-console-only, shown by
+	// update_operator_total(); hidden until then (see set_ijf_lamps_visible())
+	ui->text_total_first->hide();
+	ui->text_total_second->hide();
 	ui->image_hansokumake_first->UpdateImage(":res/images/off.png");
 	ui->image_hansokumake_second->UpdateImage(":res/images/off.png");
 	ui->image_sand_clock->UpdateImage(":res/images/sand_clock.png");
@@ -318,6 +326,7 @@ void View::UpdateView()
 		update_wazaari(FighterEnum::First);
 		update_yuko(FighterEnum::First);
 		update_shido(FighterEnum::First);
+		update_operator_total(FighterEnum::First);
 		update_hansokumake(FighterEnum::First);
 
 		// second score
@@ -325,6 +334,7 @@ void View::UpdateView()
 		update_wazaari(FighterEnum::Second);
 		update_yuko(FighterEnum::Second);
 		update_shido(FighterEnum::Second);
+		update_operator_total(FighterEnum::Second);
 		update_hansokumake(FighterEnum::Second);
 	}
 
@@ -648,6 +658,19 @@ void View::mousePressEvent(QMouseEvent* event)
 			whos = FighterEnum::First;
 			action = eAction_Yuko;
 		}
+		// JVP additive: Shido is shown as a count digit instead of the lamps, so
+		// the digit must be clickable just like the lamps were (left = +Shido,
+		// right = revoke via doRevoke). Mirrors the image_shido* cases below.
+        else if (textChild == ui->text_shido_second)
+		{
+			whos = FighterEnum::Second;
+			action = eAction_Shido;
+		}
+        else if (textChild == ui->text_shido_first)
+		{
+			whos = FighterEnum::First;
+			action = eAction_Shido;
+		}
 
 		//else
 		//{
@@ -942,6 +965,31 @@ void View::update_shido(Ipponboard::FighterEnum who) const
 	}
 
 	const int score = m_pController->GetScore(GVF_(who), Point::Shido);
+
+	// JVP additive (uncapped Shido, no Hansoku-make escalation) on the operator
+	// console: the 3 IJF lamps cannot represent 4+ Shido, so render a plain count
+	// digit instead — mirroring the Ippon counter in update_ippon(). The spectator
+	// screen folds Shido into the 0..20 total (wantAdditive) and never gets here.
+	ScaledText* const digit =
+		(FighterEnum::First == who) ? ui->text_shido_first : ui->text_shido_second;
+
+	if (!is_secondary() && m_pController->GetRules()->GetMaxShidoCount() > 3)
+	{
+		pImage1->hide();
+		pImage2->hide();
+		pImage3->hide();
+		digit->show();
+		digit->SetText(QString::number(score), ScaledText::eSize_full);
+		return;
+	}
+
+	// classic IJF lamp rendering: drop the additive digit and restore the two
+	// always-on lamps (a runtime ruleset switch may have hidden them); shido3
+	// visibility stays governed by UpdateView's GetMaxShidoCount() check.
+	digit->hide();
+	pImage1->show();
+	pImage2->show();
+
 	const auto imageOn = ":res/images/on.png";
 	const auto imageOff = ":res/images/off.png";
 	const auto imageEmpty = ":res/images/off_empty.png";
@@ -989,6 +1037,19 @@ void View::set_ijf_lamps_visible(bool visible) const
 
 	for (QWidget* w : lamps)
 		w->setVisible(visible);
+
+	// the additive Shido count digit is operator-console-only and driven entirely
+	// by update_shido(); it is never part of the IJF lamp set, so keep it hidden
+	// here (this also clears it off the secondary additive screen, which shows the
+	// 0..20 total instead and never calls update_shido).
+	ui->text_shido_first->hide();
+	ui->text_shido_second->hide();
+
+	// the operator-console additive total is driven by update_operator_total() and
+	// is never part of the IJF lamp set nor the secondary additive screen; keep it
+	// hidden here so a layout transition (either direction) clears it.
+	ui->text_total_first->hide();
+	ui->text_total_second->hide();
 }
 
 //=========================================================
@@ -1014,6 +1075,30 @@ void View::update_additive_total(Ipponboard::FighterEnum who) const
 	const bool drawnAtEnd = (m_pController->GetSecondsRemaining() == 0)
 							 && (m_pController->GetWinner() == FighterEnum::Nobody);
 	totalLabel->SetText(drawnAtEnd ? "HIKI-WAKE" : "");
+}
+
+//=========================================================
+void View::update_operator_total(Ipponboard::FighterEnum who) const
+//=========================================================
+{
+	// JVP additive scoring on the operator console: show each fighter's running
+	// 0..20 total next to the main clock so the operator can track the score
+	// (left = Second, right = First, matching the name/hold-clock layout). The
+	// spectator screen folds the total into the big digit via update_additive_total()
+	// and never gets here; mirrors the additive Shido digit in update_shido().
+	ScaledText* const digit =
+		(FighterEnum::First == who) ? ui->text_total_first : ui->text_total_second;
+
+	if (!is_secondary() && m_pController->GetRules()->GetMaxShidoCount() > 3)
+	{
+		const int total = m_pController->GetDisplayScore(GVF_(who));
+		digit->show();
+		digit->SetText(QString::number(total < 0 ? 0 : total), ScaledText::eSize_full);
+	}
+	else
+	{
+		digit->hide();
+	}
 }
 
 //=========================================================
@@ -1218,6 +1303,8 @@ void View::update_colors()
 	ui->image_shido3_first->SetBgColor(get_color(firstBg));
 	ui->image_shido2_first->SetBgColor(get_color(firstBg));
 	ui->image_shido1_first->SetBgColor(get_color(firstBg));
+	ui->text_shido_first->SetColor(get_color(firstFg), get_color(firstBg));
+	ui->text_total_first->SetColor(get_color(firstFg), get_color(firstBg));
 	ui->text_yuko_first->SetColor(get_color(firstFg), get_color(firstBg));
 	ui->text_wazaari_first->SetColor(get_color(firstFg), get_color(firstBg));
 	ui->text_ippon_first->SetColor(get_color(firstFg), get_color(firstBg));
@@ -1234,6 +1321,8 @@ void View::update_colors()
 	ui->image_shido3_second->SetBgColor(get_color(secondBg));
 	ui->image_shido2_second->SetBgColor(get_color(secondBg));
 	ui->image_shido1_second->SetBgColor(get_color(secondBg));
+	ui->text_shido_second->SetColor(get_color(secondFg), get_color(secondBg));
+	ui->text_total_second->SetColor(get_color(secondFg), get_color(secondBg));
 	ui->text_yuko_second->SetColor(get_color(secondFg), get_color(secondBg));
 	ui->text_wazaari_second->SetColor(get_color(secondFg), get_color(secondBg));
 	ui->text_ippon_second->SetColor(get_color(secondFg), get_color(secondBg));
