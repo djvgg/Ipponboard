@@ -54,4 +54,5 @@ setup/Output/
 ui*.h
 .cache/
 compile_commands.json
-.clangd
+.clangd
+.DS_Store
