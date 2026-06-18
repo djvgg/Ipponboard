@@ -106,6 +106,49 @@ TEST_CASE("[Rules] JVP additive: per-sequence cap is 10, IJF rulesets uncapped")
 	REQUIRE(ClassicRules().GetMaxSequencePoints() == INT32_MAX);
 }
 
+TEST_CASE("[Rules] hold-time OOB guard: FighterEnum contract m_seqSnapshot relies on")
+{
+	// Controller::update_hold_time + IpponboardSM_::add_point(HoldTimeEvent) guard on
+	// "tori is a real fighter" before indexing m_seqSnapshot[2] (JVP sequence cap).
+	// That guard is only correct if Nobody is OUTSIDE {0,1} and First/Second ARE the
+	// valid indices. If the enum is ever renumbered, the guard must be revisited —
+	// pin the contract here so the OOB (m_seqSnapshot[Nobody] == [-1], UB) can't
+	// silently come back. See outbox/wsp-debug-2026-06-18.md.
+	REQUIRE(static_cast<int>(FighterEnum::First) == 0);
+	REQUIRE(static_cast<int>(FighterEnum::Second) == 1);
+	REQUIRE(static_cast<int>(FighterEnum::Nobody) < 0);
+
+	INFO("Nobody must not be a valid m_seqSnapshot index")
+	const int nobody = static_cast<int>(FighterEnum::Nobody);
+	REQUIRE((nobody < 0 || nobody > 1));
+}
+
+TEST_CASE("[Rules] additive max counts are INT32_MAX (cap+1 would overflow)")
+{
+	// The revoke-shido (StateMachine) and hansokumake-render (View) paths test
+	// "fighter is one beyond the shido cap". They are written as Shido()-1 == cap,
+	// NOT cap+1 == Shido(), because for the additive ruleset cap is INT32_MAX and
+	// cap+1 is signed overflow (UB). Pin the precondition + the equivalence.
+	REQUIRE(RulesPfalzU13().GetMaxShidoCount() == INT32_MAX);
+	REQUIRE(RulesPfalzU13().GetMaxIpponCount() == INT32_MAX);
+	REQUIRE(RulesPfalzU13().GetMaxWazaariCount() == INT32_MAX);
+
+	// Shido()-1 == cap is overflow-free and matches cap+1 == Shido() for every
+	// realistic (small, >=0) shido count under a capped IJF ruleset.
+	const int cap = Rules2025().GetMaxShidoCount(); // 3
+	for (int shido = 0; shido <= 6; ++shido)
+	{
+		const bool viaSub = (shido - 1 == cap);          // the form we ship
+		const bool viaAdd = (cap + 1 == shido);          // the old form (cap small here)
+		REQUIRE(viaSub == viaAdd);
+	}
+
+	INFO("for the uncapped additive ruleset the branch is simply never true")
+	const int additiveCap = RulesPfalzU13().GetMaxShidoCount(); // INT32_MAX
+	for (int shido = 0; shido <= 50; ++shido)
+		REQUIRE_FALSE(shido - 1 == additiveCap);
+}
+
 TEST_CASE("[Rules] additive Hansoku-make awards no Ippon; IJF does")
 {
 	// Drives the StateMachine gate: under IJF a direct Hansoku-make hands the

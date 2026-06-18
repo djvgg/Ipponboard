@@ -1013,7 +1013,9 @@ void View::update_hansokumake(Ipponboard::FighterEnum who) const
 	const int score_hansokumake = m_pController->GetScore(GVF_(who), Point::Hansokumake);
 	const int score_shido = m_pController->GetScore(GVF_(who), Point::Shido);
 
-	if (score_hansokumake > 0 || score_shido == m_pController->GetRules()->GetMaxShidoCount() + 1)
+	// score_shido - 1 == cap (not cap + 1 == score_shido): cap is INT32_MAX for the
+	// JVP additive ruleset and cap + 1 would overflow (UB). Equivalent for capped IJF.
+	if (score_hansokumake > 0 || score_shido - 1 == m_pController->GetRules()->GetMaxShidoCount())
 	{
 		pImage->UpdateImage(":res/images/on_hansokumake.png");
 	}

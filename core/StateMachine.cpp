@@ -33,6 +33,15 @@ void IpponboardSM_::add_point(HoldTimeEvent const& evt)
 		return;
 	}
 
+	// Defensive: only a real fighter holds. evt.tori comes from Controller::m_Tori,
+	// which is Nobody (-1) by default and across resets; never index m_seqSnapshot
+	// (size 2) or score with a non-fighter tori — a Nobody tori is m_seqSnapshot[-1]
+	// (UB). The Controller-side guard already blocks this; this is belt-and-braces.
+	if (FighterEnum::First != evt.tori && FighterEnum::Second != evt.tori)
+	{
+		return;
+	}
+
 	// JVP § 3.5.3: cap the points gained in one Hajime–Mate sequence. For every
 	// IJF ruleset GetMaxSequencePoints() == INT32_MAX, so the escalation below
 	// is never suppressed and behaviour is unchanged.
@@ -288,7 +297,11 @@ void IpponboardSM_::add_point(PointEvent<revoke_shido_hm_type> const& evt)
 		{
 			auto maxShidoCount = pRules->GetMaxShidoCount();
 
-			if (maxShidoCount + 1 == Score_(evt.tori).Shido())
+			// "fighter is at cap+1 shido" (the hansoku-triggering count). Written as
+			// Shido()-1 == cap to avoid cap+1 overflowing when cap is INT32_MAX
+			// (JVP/additive, uncapped) — signed overflow is UB. Equivalent for every
+			// capped IJF ruleset (Shido() >= 0).
+			if (Score_(evt.tori).Shido() - 1 == maxShidoCount)
 			{
 				Score_(uke).Remove(Point::Ippon);
 			}

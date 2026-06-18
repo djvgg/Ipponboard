@@ -1289,7 +1289,12 @@ void Controller::update_hold_time()
 	*m_pTimeHold = m_pTimeHold->addSecs(1);
 	const int secs = m_pTimeHold->second();
 
-	if (secs > 0 &&
+	// Never raise a hold-time score for a non-fighter tori. m_Tori is Nobody (-1)
+	// by default and after every reset/finish; a hold-timer tick that lands in a
+	// transient "Holding + m_Tori==Nobody" window would otherwise reach
+	// IpponboardSM_::add_point(HoldTimeEvent) and index m_seqSnapshot[-1] (UB).
+	if (FighterEnum::Nobody != m_Tori &&
+			secs > 0 &&
 			(m_rules->GetOsaekomiValue(Score::Point::Yuko) == secs
 			 || m_rules->GetOsaekomiValue(Score::Point::Wazaari) == secs
 			 || m_rules->GetOsaekomiValue(Score::Point::Ippon) == secs))
