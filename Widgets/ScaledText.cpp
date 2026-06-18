@@ -92,13 +92,20 @@ void ScaledText::SetText(const QString& text,
 						 ETextSize size,
 						 bool rotate)
 {
+	const QString newText = (eSize_uppercase == size) ? text.toUpper() : text;
+
+	// No-op when nothing changed. The operator console re-runs SetText on every
+	// view refresh (each clock second, each score click), but the digit widgets
+	// (Shido count, additive total, names, ...) usually hold the same value.
+	// Rebuilding the text layout + repainting every tick made the digit flash its
+	// background (paintEvent fills m_BGColor — white for fighter 1) and the row
+	// appear to jump. Resizes are handled independently in resizeEvent(); colour
+	// and font changes Redraw() on their own, so skipping here is safe.
+	if (newText == m_Text && size == m_textSize && rotate == m_isRotated)
+		return;
+
 	set_size(size);
-
-	if (eSize_uppercase == m_textSize)
-		m_Text = text.toUpper();
-	else
-		m_Text = text;
-
+	m_Text = newText;
     m_isRotated = rotate;
 
 	if (m_autoFit)
